@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZENIT — przewodnik głosowy po niebie nocnym</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --void: #050506;
+      --void-deep: #000000;
+      --onboard-bg: #0B0B0D;
+      --ember: #A13D3D;
+      --ember-dim: #4A1B20;
+      --ember-bright: #C24B4B;
+      --parchment: #F0EAE0;
+      --parchment-dim: rgba(240, 234, 224, 0.55);
+      --gold: #C9A24B;
+      --gold-dim: rgba(201, 162, 75, 0.35);
+    }
+
+    body {
+      font-family: 'IBM Plex Mono', monospace;
+      background: #000;
+      color: var(--parchment);
+      overflow: hidden;
+    }
+
+    #app {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .screen {
+      width: 100%;
+      max-width: 500px;
+      height: 600px;
+      background: var(--onboard-bg);
+      border: 1px solid var(--ember-dim);
+      border-radius: 24px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-y: auto;
+      transition: background-color 0.7s ease;
+    }
+
+    .screen.calibration {
+      background: var(--void);
+    }
+
+    .screen.session {
+      background: var(--void-deep);
+    }
+
+    .screen-header {
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      color: var(--ember-bright);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+    }
+
+    .screen-title {
+      font-size: 3rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      margin-bottom: 1rem;
+      color: var(--parchment);
+    }
+
+    .screen-subtitle {
+      font-size: 0.9rem;
+      font-style: italic;
+      margin-bottom: 2rem;
+      color: var(--parchment-dim);
+      line-height: 1.5;
+    }
+
+    .section {
+      margin-bottom: 2rem;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      color: var(--parchment-dim);
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .button {
+      padding: 0.75rem;
+      border: 1px solid var(--ember-dim);
+      background: transparent;
+      color: var(--parchment);
+      border-radius: 16px;
+      cursor: pointer;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+
+    .button:hover:not(:disabled) {
+      border-color: var(--gold);
+      background: rgba(201, 162, 75, 0.08);
+    }
+
+    .button.active {
+      border-color: var(--gold);
+      background: rgba(201, 162, 75, 0.08);
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .button-primary {
+      width: 100%;
+      padding: 1rem;
+      background: var(--ember);
+      border-color: var(--ember);
+      color: var(--parchment);
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+    }
+
+    .button-primary:disabled {
+      background: var(--ember-dim);
+      opacity: 0.5;
+    }
+
+    .button-label {
+      font-size: 0.85rem;
+      margin-bottom: 0.25rem;
+      color: var(--parchment);
+    }
+
+    .button-hint {
+      font-size: 0.7rem;
+      color: var(--parchment-dim);
+      line-height: 1.3;
+    }
+
+    .flex-spacer {
+      flex: 1;
+    }
+
+    .calibration-visual {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 2rem 0;
+    }
+
+    .pulse-ring {
+      width: 160px;
+      height: 160px;
+      border: 2px solid var(--ember);
+      border-radius: 50%;
+      position: relative;
+      animation: pulse 2s infinite;
+    }
+
+    .pulse-ring.calibrated {
+      border-color: var(--gold);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .pulse-inner {
+      position: absolute;
+      inset: 16px;
+      border: 1px solid var(--ember-dim);
+      border-radius: 50%;
+    }
+
+    .pulse-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .calibration-text {
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      color: var(--parchment-dim);
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .session-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 1.5rem;
+    }
+
+    .session-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 1rem;
+      margin-top: -1rem;
+      margin-bottom: 1rem;
+      font-size: 0.7rem;
+      color: var(--ember-dim);
+      letter-spacing: 1px;
+    }
+
+    .star-indicator {
+      width: 96px;
+      height: 96px;
+      position: relative;
+      margin: 0 auto;
+    }
+
+    .star-glow {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--gold-dim), transparent 70%);
+      animation: pulse 2s infinite;
+    }
+
+    .star-dot {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .star-dot::after {
+      content: '';
+      width: 12px;
+      height: 12px;
+      background: var(--gold);
+      border-radius: 50%;
+    }
+
+    .step-label {
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      color: var(--ember-bright);
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .step-text {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: var(--parchment);
+      font-family: 'Literata', Georgia, serif;
+    }
+
+    .step-fact {
+      font-size: 0.9rem;
+      font-style: italic;
+      color: var(--gold);
+      margin-top: 1rem;
+      line-height: 1.5;
+      font-family: 'Literata', Georgia, serif;
+    }
+
+    .button-bottom {
+      width: 100%;
+      padding: 1.25rem;
+      border-top: 1px solid var(--ember-dim);
+      background: transparent;
+      color: var(--parchment);
+      border: none;
+      border-top: 1px solid var(--ember-dim);
+      cursor: pointer;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      margin-top: 1rem;
+      transition: color 0.2s ease;
+    }
+
+    .button-bottom:hover:not(:disabled) {
+      color: var(--gold);
+    }
+
+    .button-bottom:disabled {
+      color: var(--parchment-dim);
+      cursor: not-allowed;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Literata:ital,wght@0,400;0,500;1,400&display=swap');
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- External libraries from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.2.0/astronomy.js"></script>
+
+  <!-- App modules -->
+  <script src="src/lib/systemPrompt.js"></script>
+  <script src="src/lib/fallbackSteps.js"></script>
+  <script src="src/lib/catalog.json.js"></script>
+  <script src="src/lib/astronomy.js"></script>
+  <script src="src/lib/tts.js"></script>
+  <script src="src/lib/llm.js"></script>
+  <script src="src/components.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
