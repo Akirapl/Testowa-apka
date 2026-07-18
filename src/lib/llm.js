@@ -24,6 +24,72 @@ window.LLM = {
     }
   },
 
+  // Testuj czy klucz API jest prawidłowy
+  async testKey() {
+    if (!this.apiKey || !this.provider) {
+      console.warn("testKey: no apiKey or provider set");
+      return false;
+    }
+
+    try {
+      let response;
+      const testMessage = "Test";
+
+      switch (this.provider) {
+        case "claude":
+          response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": this.apiKey,
+              "anthropic-version": "2023-06-01"
+            },
+            body: JSON.stringify({
+              model: this.model,
+              max_tokens: 10,
+              messages: [{ role: "user", content: testMessage }]
+            })
+          });
+          break;
+        case "openai":
+          response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${this.apiKey}`
+            },
+            body: JSON.stringify({
+              model: this.model,
+              max_tokens: 10,
+              messages: [{ role: "user", content: testMessage }]
+            })
+          });
+          break;
+        case "mistral":
+          response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${this.apiKey}`
+            },
+            body: JSON.stringify({
+              model: this.model,
+              max_tokens: 10,
+              messages: [{ role: "user", content: testMessage }]
+            })
+          });
+          break;
+      }
+
+      const isValid = response && response.ok;
+      console.log(`testKey: ${this.provider} key is ${isValid ? "✅ VALID" : "❌ INVALID"} (status: ${response?.status})`);
+      return isValid;
+    } catch (error) {
+      console.error("testKey error:", error);
+      return false;
+    }
+  },
+
   // Wygeneruj następny krok narracji
   async generateStep(context) {
     if (!this.apiKey) {

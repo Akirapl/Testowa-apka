@@ -87,7 +87,18 @@ window.app = {
       return;
     }
 
-    // Przejdź do personalizacji
+    // Testuj klucz API (ale pozwól kontynuować)
+    console.log("Testing API key...");
+    const isKeyValid = await window.LLM.testKey();
+
+    if (!isKeyValid) {
+      console.warn("⚠️ API key test failed - będę używać offline fallback steps");
+      alert("⚠️ Klucz API nieprawidłowy lub sieć niedostępna.\n\nBędę używać pre-napisane opowiadania (offline mode).");
+    } else {
+      console.log("✅ API key is valid!");
+    }
+
+    // Przejdź do personalizacji (niezależnie od wyniku testu)
     console.log("Setting screen to: personalization");
     this.state.screen = "personalization";
     this.render();
