@@ -19,11 +19,17 @@ window.app = {
   render() {
     const app = document.getElementById("app");
 
+    console.log("RENDER: current screen =", this.state.screen);
+    console.log("STATE:", JSON.stringify(this.state, null, 2));
+
     if (this.state.screen === "onboarding") {
+      console.log("→ Rendering ONBOARDING");
       app.innerHTML = window.Components.renderOnboarding(this.state);
     } else if (this.state.screen === "personalization") {
+      console.log("→ Rendering PERSONALIZATION");
       app.innerHTML = window.Components.renderPersonalization(this.state);
     } else if (this.state.screen === "session") {
+      console.log("→ Rendering SESSION");
       // Przygotuj kroki jeśli jeszcze nie są
       if (this.state.steps.length === 0) {
         this.prepareSteps();
@@ -61,8 +67,11 @@ window.app = {
   },
 
   async startSession() {
+    console.log("startSession() called");
     const apiKeyInput = document.getElementById("apiKey");
     const apiKey = apiKeyInput?.value;
+
+    console.log("apiKey:", apiKey ? "PROVIDED" : "MISSING");
 
     if (!apiKey) {
       alert("Podaj API key");
@@ -72,21 +81,27 @@ window.app = {
     // Inicjalizuj LLM
     try {
       window.LLM.init(this.state.provider, apiKey);
+      console.log("LLM initialized with provider:", this.state.provider);
     } catch (error) {
       alert("Błąd inicjalizacji LLM: " + error.message);
       return;
     }
 
     // Przejdź do personalizacji
+    console.log("Setting screen to: personalization");
     this.state.screen = "personalization";
     this.render();
   },
 
   async startPersonalizedSession() {
+    console.log("startPersonalizedSession() called");
     const personalizationInput = document.getElementById("personalization");
     this.state.personalization = personalizationInput?.value || "";
 
+    console.log("Personalization:", this.state.personalization);
+
     // Przejdź do sesji
+    console.log("Setting screen to: session");
     this.state.screen = "session";
     this.state.currentStepIndex = 0;
     this.render();
