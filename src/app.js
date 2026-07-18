@@ -100,6 +100,24 @@ window.app = {
 
     console.log("Personalization:", this.state.personalization);
 
+    // Wyślij personalizację na backend
+    if (this.state.personalization) {
+      try {
+        const response = await fetch("/api/personalization", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            profile: this.state.profile,
+            personalization: this.state.personalization
+          })
+        });
+        const result = await response.json();
+        console.log("✅ Backend response:", result);
+      } catch (error) {
+        console.error("❌ Failed to send personalization:", error);
+      }
+    }
+
     // Przejdź do sesji
     console.log("Setting screen to: session");
     this.state.screen = "session";
