@@ -2,11 +2,9 @@
 
 window.app = {
   state: {
-    screen: "onboarding",  // onboarding | calibration | session
+    screen: "onboarding",  // onboarding | session
     profile: null,
     provider: null,
-    calibrating: false,
-    calibrated: false,
     currentStepIndex: 0,
     steps: [],
     location: { lat: 50.05, lon: 14.47 }  // Praga (domyślna)
@@ -22,8 +20,6 @@ window.app = {
 
     if (this.state.screen === "onboarding") {
       app.innerHTML = window.Components.renderOnboarding(this.state);
-    } else if (this.state.screen === "calibration") {
-      app.innerHTML = window.Components.renderCalibration(this.state);
     } else if (this.state.screen === "session") {
       // Przygotuj kroki jeśli jeszcze nie są
       if (this.state.steps.length === 0) {
@@ -78,31 +74,11 @@ window.app = {
       return;
     }
 
-    // Przejdź do kalibracji
-    this.state.screen = "calibration";
-    this.state.calibrating = false;
-    this.state.calibrated = false;
+    // Pomiń kalibrację — przejdź bezpośrednio do sesji
+    this.state.screen = "session";
+    this.state.currentStepIndex = 0;
     this.render();
-  },
-
-  startCalibration() {
-    this.state.calibrating = true;
-    this.render();
-
-    // Symuluj kalibrację przez 3 sekundy
-    setTimeout(() => {
-      this.state.calibrating = false;
-      this.state.calibrated = true;
-      this.render();
-
-      // Po 1 sekundzie przejdź do sesji
-      setTimeout(() => {
-        this.state.screen = "session";
-        this.state.currentStepIndex = 0;
-        this.render();
-        this.playFirstStep();
-      }, 900);
-    }, 3000);
+    await this.playFirstStep();
   },
 
   prepareSteps() {
