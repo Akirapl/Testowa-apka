@@ -186,14 +186,17 @@ window.app = {
       // Próbuj wygenerować z LLM
       let step;
       try {
+        console.log("📡 Calling LLM.generateStep with context:", context);
         const llmResponse = await window.LLM.generateStep(context);
+        console.log("✅ LLM response received:", llmResponse);
         step = {
           ...this.state.steps[this.state.currentStepIndex],
           narration: llmResponse.narration,
           fact: llmResponse.fact
         };
       } catch (llmError) {
-        console.warn("LLM failed, using fallback:", llmError);
+        console.error("❌ LLM FAILED with error:", llmError.message || llmError);
+        console.warn("📚 Using fallback step instead");
         // Fallback — użyj pre-napisanego kroku
         step = this.state.steps[this.state.currentStepIndex];
       }
