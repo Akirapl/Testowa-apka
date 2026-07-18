@@ -64,48 +64,13 @@ window.Components = {
         <button class="button-primary"
           ${state.profile && state.provider ? '' : 'disabled'}
           onclick="window.app.startSession()">
-          Przejdź do kalibracji →
+          Rozpocznij obserwację →
         </button>
       </div>
     `;
   },
 
-  // Ekran kalibracji — instrukcja
-  renderCalibration(state) {
-    return `
-      <div class="screen calibration">
-        <div class="screen-header">KALIBRACJA · JEDNORAZOWO</div>
-        <p class="screen-subtitle" style="font-size: 1.1rem; margin-bottom: 2rem;">
-          Połóż telefon na klatce piersiowej, ekranem w górę. Wyprostuj się i spójrz prosto w niebo (północ).
-        </p>
-
-        <div class="calibration-visual">
-          <div class="pulse-ring ${state.calibrated ? 'calibrated' : ''}">
-            <div class="pulse-inner"></div>
-            <div class="pulse-center">
-              ${state.calibrated ? '✓' : (state.calibrating ? '...' : '')}
-            </div>
-          </div>
-        </div>
-
-        <p class="calibration-text">
-          ${state.calibrated
-            ? "Punkt odniesienia zapisany. Telefon możesz odłożyć."
-            : "Po tym kroku ekran nie będzie już potrzebny."}
-        </p>
-
-        <div class="flex-spacer"></div>
-
-        <button class="button-primary"
-          ${state.calibrating || state.calibrated ? 'disabled' : ''}
-          onclick="window.app.startCalibration()">
-          ${state.calibrated ? 'Skalibrowano' : (state.calibrating ? 'Kalibruję...' : 'Rozpocznij kalibrację (3s)')}
-        </button>
-      </div>
-    `;
-  },
-
-  // Ekran sesji — narracja
+// Ekran sesji — narracja
   renderSession(state) {
     const step = state.steps[state.currentStepIndex];
     const isLastStep = state.currentStepIndex >= state.steps.length;
