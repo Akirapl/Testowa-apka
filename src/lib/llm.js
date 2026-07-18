@@ -138,10 +138,15 @@ window.LLM = {
 
   // Buduj prompt dla LLM
   buildPrompt(context) {
-    const { profile, currentStep, totalSteps, object, previousObjects } = context;
+    const { profile, currentStep, totalSteps, object, previousObjects, personalization } = context;
 
     let prompt = `Jesteś w kroku ${currentStep}/${totalSteps}.\n`;
-    prompt += `Profil użytkownika: ${profile}\n\n`;
+    prompt += `Profil użytkownika: ${profile}\n`;
+
+    if (personalization && personalization.trim()) {
+      prompt += `O użytkowniku: ${personalization}\n\n`;
+    }
+
     prompt += `Bieżący cel: ${object.name}\n`;
     prompt += `Azymut: ${object.azimuth.toFixed(1)}°, Wysokość: ${object.altitude.toFixed(1)}°\n`;
 
@@ -149,7 +154,7 @@ window.LLM = {
       prompt += `Poprzednio znalezione: ${previousObjects.map(o => o.name).join(", ")}\n`;
     }
 
-    prompt += `\nWygeneruj naturalną, drażliwą narrację w polskim dla tego kroku. Odpowiedź musi być poprawnym JSON z polami: narration (tekst do TTS), fact (ciekawostka), continue (boolean).`;
+    prompt += `\nWygeneruj naturalną, drażliwą narrację w polskim dla tego kroku. JEŚLI ma opis użytkownika - dostosuj narrację do jego zainteresowań, profesji, doświadczenia. Odpowiedź musi być poprawnym JSON z polami: narration (tekst do TTS), fact (ciekawostka), continue (boolean).`;
 
     return prompt;
   },

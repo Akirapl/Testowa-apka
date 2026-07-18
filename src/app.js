@@ -2,9 +2,10 @@
 
 window.app = {
   state: {
-    screen: "onboarding",  // onboarding | session
+    screen: "onboarding",  // onboarding | personalization | session
     profile: null,
     provider: null,
+    personalization: "",
     currentStepIndex: 0,
     steps: [],
     location: { lat: 50.05, lon: 14.47 }  // Praga (domyślna)
@@ -20,6 +21,8 @@ window.app = {
 
     if (this.state.screen === "onboarding") {
       app.innerHTML = window.Components.renderOnboarding(this.state);
+    } else if (this.state.screen === "personalization") {
+      app.innerHTML = window.Components.renderPersonalization(this.state);
     } else if (this.state.screen === "session") {
       // Przygotuj kroki jeśli jeszcze nie są
       if (this.state.steps.length === 0) {
@@ -74,7 +77,16 @@ window.app = {
       return;
     }
 
-    // Pomiń kalibrację — przejdź bezpośrednio do sesji
+    // Przejdź do personalizacji
+    this.state.screen = "personalization";
+    this.render();
+  },
+
+  async startPersonalizedSession() {
+    const personalizationInput = document.getElementById("personalization");
+    this.state.personalization = personalizationInput?.value || "";
+
+    // Przejdź do sesji
     this.state.screen = "session";
     this.state.currentStepIndex = 0;
     this.render();
@@ -123,7 +135,8 @@ window.app = {
         currentStep: this.state.currentStepIndex + 1,
         totalSteps: this.state.steps.length,
         object: this.state.steps[this.state.currentStepIndex],
-        previousObjects: this.state.steps.slice(0, this.state.currentStepIndex)
+        previousObjects: this.state.steps.slice(0, this.state.currentStepIndex),
+        personalization: this.state.personalization
       };
 
       // Próbuj wygenerować z LLM

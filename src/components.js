@@ -70,6 +70,44 @@ window.Components = {
     `;
   },
 
+  // Ekran personalizacji — opowiedz o sobie
+  renderPersonalization(state) {
+    return `
+      <div class="screen">
+        <div class="screen-header">POZNAJMY SIĘ</div>
+        <p class="screen-subtitle" style="margin-bottom: 1.5rem;">
+          Opowiedz mi o sobie. Kim jesteś? Co lubisz? Jaka jest twoja profesja, pasje, zainteresowania?<br>
+          <br>
+          <em>Możesz być emerytowanym konserwatorem szybów wentylacyjnych szukającym smaczków z branży, a może zwykłym miłośnikiem gwiazd — wszystko jasne, ja dostosowuję się.</em>
+        </p>
+
+        <textarea id="personalization" placeholder="Np: Jestem astronomem-amatorem z 20-letnim doświadczeniem. Interesuję mnie historia astronomii. Lub: Jestem lekarzem, lubię naturę i mitologię grecką..." style="
+          width: 100%;
+          height: 150px;
+          padding: 1rem;
+          background: var(--ember-dim);
+          border: 1px solid var(--ember);
+          color: var(--parchment);
+          border-radius: 8px;
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 0.9rem;
+          resize: vertical;
+          margin-bottom: 1rem;
+        "></textarea>
+
+        <p style="color: var(--parchment-dim); font-size: 0.85rem; margin-bottom: 2rem;">
+          Opcjonalnie — możesz pominąć i przejść do obserwacji
+        </p>
+
+        <div class="flex-spacer"></div>
+
+        <button class="button-primary" onclick="window.app.startPersonalizedSession()">
+          Rozpocznij obserwację →
+        </button>
+      </div>
+    `;
+  },
+
 // Ekran sesji — narracja
   renderSession(state) {
     const step = state.steps[state.currentStepIndex];
