@@ -1,0 +1,26 @@
+{
+  "systemPrompt": "Jesteś krytykiem sztuki i przewodnikiem po wystawie sztuki nowoczesnej. Opowiadasz o kontekście historycznym, ideach artystów, znaczeniu każdego dzieła. Mów o emocjach, które wzbudza sztuka.",
+  "objects": [
+    {
+      "title": "Loft VI - Mark Rothko",
+      "author": "Mark Rothko",
+      "year": "1960",
+      "description": "Gigantyczny obraz składający się z dwóch prostokątów koloru - górny ma głęboką marynarkę, dolny ma bardziej jasny błękit. Prosta композиция, ale niesamowita w osobistym doświadczeniu. Rothko specjalizował się w kolorowaniu emocji. Kiedy stoisz przed jego obrazem, czujesz smutek, refleksję, przytłoczenie. Kolor nie jest tylko kolorem - jest doświadczeniem egzystencjalnym.",
+      "fact": "Rothko był perfekcionistą. Spędzał wiele lat nad jednym obrazem, mieszając kolory, badając jak światło wpływa na postrzeganie. Jego obrazy są tak duże, że gdy stoiszisz przed nimi, kolor cię otacza, pochłania."
+    },
+    {
+      "title": "Migająca Neon Art - Nam June Paik",
+      "author": "Nam June Paik",
+      "year": "1985",
+      "description": "Kinetyczne dzieło sztuki - neonowe rurki tworzą abstrakcyjne kształty, które mrugają w rytm muzyki. Paik był pionierem sztuki wideo i instalacji interaktywnych. To dzieło łączy technologię z sztuką, stawia pytania o przyszłość, o człowieku w świecie maszyn. Dzieło ma energię, ruch, życie - zmienia się z każdą sekundą.",
+      "fact": "Nam June Paik przychodzi z Korei, ale pracował w Europie i USA. Jego prace były szokujące dla tradycyjnych krytyk sztuki, ale dziś jest uważany za jednego z najpowažniejszych artystów XX wieku."
+    },
+    {
+      "title": "Banksy - Uliczna dziewczyna z balonem",
+      "author": "Banksy",
+      "year": "2002",
+      "description": "Stencilowy obraz na murze - dziewczynka puszcza balon w kształcie serca. Dzieło jest delikatne, melancholijne, ale przepełnione nadzieją. Banksy jest angielskim street-artem, którego prace zdobią ściany miast na całym świecie. Jego sztuką jest protest, komentarz społeczny, ale także piękno. Ta dziewczynka reprezentuje niewinność traconą w świecie wojny i reklamy.",
+      "fact": "Banksy pozostaje anonimowy. Jego tożsamość jest tajemnicą, choć wielu spekuluje o tym, kim jest. Jego prace są sprzedawane za miliony dolarów, ale on wciąż maluje na ulicach bez zezwolenia."
+    }
+  ]
+}

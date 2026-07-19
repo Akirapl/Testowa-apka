@@ -1,6 +1,37 @@
 // UI Components
 
 window.Components = {
+  // Ekran wyboru zainteresowań
+  renderInterestSelector(state) {
+    const interests = [
+      { id: "history", label: "Historia", icon: "📜", hint: "Zabytkowe mozaiki, artefakty, relikwie" },
+      { id: "nature", label: "Przyroda", icon: "🦋", hint: "Owady, zwierzęta, ekologia" },
+      { id: "art", label: "Sztuka", icon: "🎨", hint: "Sztuka nowoczesna, obrazy, instalacje" }
+    ];
+
+    return `
+      <div class="screen">
+        <div class="screen-header">ZENIT</div>
+        <div class="screen-title">CO CIĘ INTERESUJE?</div>
+        <p class="screen-subtitle">Wybierz temat wystawy, którą chcesz zwiedzić.</p>
+
+        <div class="section" style="margin-top: 2rem;">
+          <div class="grid">
+            ${interests.map(i => `
+              <button class="button large-button" onclick="window.app.selectInterest('${i.id}')">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">${i.icon}</div>
+                <div class="button-label" style="font-size: 1.1rem;">${i.label}</div>
+                <div class="button-hint">${i.hint}</div>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="flex-spacer"></div>
+      </div>
+    `;
+  },
+
   // Ekran wyboru wersji — astronomia lub muzeum
   renderVersionSelector(state) {
     return `
@@ -30,36 +61,54 @@ window.Components = {
   // Ekran onboardingu — wybór profilu
   renderOnboarding(state, onProfileSelect, onApiSelect, onStart) {
     if (state.version === "museum") {
+      const exhibits = [
+        { id: "gumiak-grudziadz", label: "Gumiaeki z Grudziądza", hint: "Historia polskich gumiaków (1927-2015)" },
+        { id: "exhibit-zabytkowe-mozaiki", label: "Starożytne Mozaiki", hint: "Mozaiki rzymskie z okresu antycznego" },
+        { id: "exhibit-natura-owady", label: "Świat Owadów", hint: "Entomologia - od Apollo do Herculesa" },
+        { id: "exhibit-sztuka-nowoczesna", label: "Sztuka Nowoczesna", hint: "XX-XXI wiek: Rothko, Paik, Banksy" }
+      ];
+
       return `
         <div class="screen">
           <div class="screen-header">OPROWADZANIE PO WYSTAWIE</div>
           <div class="screen-title">ZENIT MUZEUM</div>
-          <p class="screen-subtitle">Wklej kod QR z promptem kuratora muzeum</p>
+          <p class="screen-subtitle">Wybierz wystawę którą chcesz zwiedzić</p>
 
           <div class="section">
-            <label class="section-label">KOD QR KURATORA</label>
+            <div class="section-label">DOSTĘPNE WYSTAWY</div>
+            <div class="grid">
+              ${exhibits.map(e => `
+                <button class="button" onclick="window.app.loadExhibit('${e.id}')">
+                  <div class="button-label">${e.label}</div>
+                  <div class="button-hint">${e.hint}</div>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="section" style="margin-top: 1.5rem;">
+            <label class="section-label">LUB WKLEJ SWÓJ KOD QR</label>
             <textarea id="curatorQR" placeholder="Wklej JSON z danych QR (zawierające systemPrompt i objects)" style="
               width: 100%;
-              height: 150px;
+              height: 100px;
               padding: 1rem;
               background: var(--ember-dim);
               border: 1px solid var(--ember);
               color: var(--parchment);
               border-radius: 8px;
               font-family: 'IBM Plex Mono', monospace;
-              font-size: 0.85rem;
+              font-size: 0.75rem;
               resize: vertical;
               margin-bottom: 1rem;
             "></textarea>
+            <button class="button-primary" onclick="window.app.loadMuseumQR()">
+              Wczytaj własną wystawę →
+            </button>
           </div>
 
           <div class="flex-spacer"></div>
 
-          <button class="button-primary" onclick="window.app.loadMuseumQR()">
-            Wczytaj wystawę →
-          </button>
-
-          <button class="button" style="margin-top: 0.5rem; width: 100%;" onclick="window.app.selectVersion(null); window.app.state.screen = 'version-selector'; window.app.render();">
+          <button class="button" style="margin-top: 0.5rem; width: 100%;" onclick="window.app.state.screen = 'version-selector'; window.app.render();">
             ← Wróć
           </button>
         </div>

@@ -2,14 +2,16 @@
 
 window.app = {
   state: {
-    screen: "version-selector",  // version-selector | onboarding | session
+    screen: "interest-selector",  // interest-selector | version-selector | onboarding | session
+    interest: null,  // "history" | "nature" | "art" itp
     version: null,  // "astronomy" | "museum"
     profile: null,
     provider: null,
     currentStepIndex: 0,
     steps: [],
     location: { lat: 50.05, lon: 14.47 },  // Praga (domyślna)
-    curatorPrompt: null  // dla wersji muzeum
+    curatorPrompt: null,  // dla wersji muzeum
+    selectedExhibit: null  // nazwa wybranej wystawy
   },
 
   init() {
@@ -20,7 +22,9 @@ window.app = {
   render() {
     const app = document.getElementById("app");
 
-    if (this.state.screen === "version-selector") {
+    if (this.state.screen === "interest-selector") {
+      app.innerHTML = window.Components.renderInterestSelector(this.state);
+    } else if (this.state.screen === "version-selector") {
       app.innerHTML = window.Components.renderVersionSelector(this.state);
     } else if (this.state.screen === "onboarding") {
       app.innerHTML = window.Components.renderOnboarding(this.state);
@@ -51,10 +55,49 @@ window.app = {
     }
   },
 
+  selectInterest(interestId) {
+    this.state.interest = interestId;
+    this.state.screen = "version-selector";
+    this.render();
+  },
+
   selectVersion(versionId) {
     this.state.version = versionId;
     this.state.screen = "onboarding";
     this.render();
+  },
+
+  async loadExhibit(exhibitName) {
+    // Załaduj gotową wystawę z JSON
+    try {
+      const response = await fetch(`/docs/${exhibitName}.json`);
+      if (!response.ok) throw new Error("Exhibit not found");
+
+      const data = await response.json();
+      this.state.curatorPrompt = data.systemPrompt || "";
+      this.state.steps = (data.objects || []).map((obj, idx) => ({
+        target: obj.title,
+        narration: obj.description || "",
+        fact: obj.fact || "",
+        author: obj.author || "",
+        year: obj.year || "",
+        index: idx
+      }));
+      this.state.selectedExhibit = exhibitName;
+
+      console.log("✅ Exhibit loaded:", {
+        name: exhibitName,
+        objects: this.state.steps.length
+      });
+
+      this.state.screen = "session";
+      this.state.currentStepIndex = 0;
+      this.render();
+      await this.playFirstStep();
+    } catch (error) {
+      alert("Błąd wczytywania wystawy: " + error.message);
+      console.error("Exhibit load error:", error);
+    }
   },
 
   async loadMuseumQR() {

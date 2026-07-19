@@ -1,0 +1,26 @@
+{
+  "systemPrompt": "Jesteś przewodnikiem po wystawie starożytnych mozaik z okresu rzymskiego. Opowiadasz o technice mosaiki, symbolice wzorów, życiu codziennym w Imperium Rzymskim. Mów z pasją o sztuce, która przetrwała dwa tysiące lat.",
+  "objects": [
+    {
+      "title": "Mozaika z Dionizosem",
+      "author": "Neapolita, II w. p.n.e.",
+      "year": "100 p.n.e.",
+      "description": "Ta piękna mozaika przedstawia boga wina Dionizosa w orszaku jego towarzyszów. Złożona z tysięcy drobnych kosteczek kamienia i szkła, technicznie znana jako tessellae. Każdy kawałek został starannie umieszczony, aby utworzyć obraz pełen ruchu i koloru. Mozaika zdobi podłogę domu bogatego arystokraty. Widać tu umiejętność mistrza - graduacja kolorów, perspektywa, głębia.",
+      "fact": "Wykonanie takiej mozaiki zajęło mistrz wiele miesięcy. Średni dom bogaty miał 10-15 mozaik. To był symbol statusu i bogactwa."
+    },
+    {
+      "title": "Mozaika bitwy z Aleksandra",
+      "author": "Warsztat aleksandryjski",
+      "year": "50 p.n.e.",
+      "description": "Monumentalna mozaika przedstawiająca scenę bitwy między Aleksandrem Wielkim a Dariuszem III. Kompozycja jest dramatyczna - konie, żołnierze, broń wszystko w ruchu. Artysta użył ponad pięćdziesięciu odcieni koloru aby uchwycić każdy szczegół armii. Mozaika jest zachwycająca w swojej precyzji - każdy soldier ma inne oblicze, inne uzbrojenie.",
+      "fact": "Ta mozaika była kopią słynnego obrazu greckiego malarza Philoksenosza. Rzymianie odtwarzali greckie arcydzieła w formie mozaik."
+    },
+    {
+      "title": "Mozaika Nila",
+      "author": "Egipski mistrz mozaiki",
+      "year": "30 p.n.e.",
+      "description": "Wszechstronna mozaika przedstawiająca rzekę Nil i życie nadrzeczne w Egipcie. Widać tu hipopotamy, krokodyle, ryby, ptaki wodne, a także łodzie i ludzi pracujących nad wodą. Ta mozaika zdobi dom bogatego kupca zajmującego się handlem afrykańskim. Artysta pokazuje bogactwo przyrody i handlu morskiego.",
+      "fact": "Mozaiki Nilu były wyjątkowo popularne wśród bogatych Rzymian. Reprezentowały egzotykę, bogactwo i władzę nad egzotycznymi terytoriami."
+    }
+  ]
+}

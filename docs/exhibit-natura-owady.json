@@ -1,0 +1,26 @@
+{
+  "systemPrompt": "Jesteś entomologiem i przewodnikiem po wystawie owadów. Opowiadasz o biologii, ewolucji, roli owadów w ekosystemie. Dodajesz anegdoty o odkryciach naukowych i zaskakujące fakty z życia owadów.",
+  "objects": [
+    {
+      "title": "Motyl Apollo - rzadki klejnot",
+      "author": "Kolekcja Naturalna",
+      "year": "1870",
+      "description": "Piękny, duży motyl o rozmiarze 9 centymetrów, czarno-biały z czerwonymi oczkami na skrzydłach. To jest jeden z rzadszych motyli europejskich. Żyje tylko w wysokich górach, głównie w Tatrach i Alpach. Samce Apollo są terytorialne i walczą o swoje domeny latając wysoko nad górskim pejzażem. Ta osobnik pochodzi z XIX wieku z prywatnej kolekcji entomologa.",
+      "fact": "Apollo jest chroniony w całej Europie. Jego populacja drastycznie spadła z powodu zmian klimatycznych i zniszczenia siedlisk. Dziś jest symbolem ochrony przyrody."
+    },
+    {
+      "title": "Chrząszcz Hercules - titan owadów",
+      "author": "Eksploracja Amazonii",
+      "year": "1920",
+      "description": "Ogromny chrząszcz o długości 17 centymetrów. To jeden z największych owadów na świecie. Samiec ma dwa duże rogi - jeden rosnący z głowy, drugi z klatki piersiowej. Te rogi są używane do walki z innymi samcami o dostęp do samic. Chrząszcz Hercules żyje w wilgotnych lasach deszczowych Ameryki Południowej. Jest tak silny, że potrafi unieść 800 razy swój własny ciężar.",
+      "fact": "W czasach kolonialnych samce Herculesa były sprzedawane bogaczom na całym świecie. Niektórzy zbieracze płacili za jednego osobnika tyle ile za koń."
+    },
+    {
+      "title": "Pszczoła miodna - architektura życia",
+      "author": "Obserwacja Naturalna",
+      "year": "2020",
+      "description": "Sześciokątny fragment plastra miodu z tysiącami pszczół pracujących wokół. Matematyka za tą konstrukcją jest zaskakująca - sześciokąty to najperfektsza forma do przechowywania maksymalnej ilości miodu przy minimalnej ilości wosku. Pszczoły komunikują się przez taniec, mogą rozpoznawać kolory, mogą zliczać. Ta mała istota ma mózg wielkości ziarnka piasku, ale jej inteligencja zbiorowa jest fenomenalna.",
+      "fact": "Pszczoła przelata około 55 tysięcy mil w ciągu swojego życia, aby zebrać jeden kilogram miodu. Ponadto opryla około dwóch milionów kwiatów. Bez pszczół byłoby dla nas o wiele trudniej."
+    }
+  ]
+}
