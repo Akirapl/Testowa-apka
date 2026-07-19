@@ -1,0 +1,47 @@
+{
+  "systemPrompt": "Jesteś przewodnikiem po wystawie historii gumiaków w Grudziądzu. Opowiadasz o ewolucji polskiego obuwia gumowego, jego wpływie na codzienne życie, technologii produkcji i znaczeniu Grudziądza jako światowego centrum przemysłu gumowniczego. Mów z pasją o tym, jak proste gumowe buty zmienily los polski i świat.",
+  "objects": [
+    {
+      "title": "Pierwsze gumiaeki Grudziądza",
+      "author": "Manufaktura Grudziądzka",
+      "year": "1927",
+      "description": "To są pierwsze gumiaeki produkowane w Grudziądzu, kiedy to miasto stało się polskim centrum przemysłu gumowniczego. Buty mają charakterystyczną, solidną konstrukcję z czarnego kauczuku i płótna bawełnianego. Pięta jest wzmocniona, a podeszwa ma głębokie karby zapewniające przyczepność. Waren wówczas luksusem - mogły nosić je tylko średniozamożne rodziny. Historia głosi, że pierwsza para trafiła do rąk Józefa Piłsudskiego.",
+      "fact": "Grudziądz w okresie międzywojennym był trzecim co do wielkości ośrodkiem produkcji gumiaków na świecie, po Stanach Zjednoczonych i Niemczech. Zatrudniał kilka tysięcy pracowników."
+    },
+    {
+      "title": "Gumiaeki czasu wojny",
+      "author": "Zakłady Grudziądzkie",
+      "year": "1943",
+      "description": "Podczas drugiej wojny światowej produkcja gumiaków w Grudziądzu była kontynuowana pod nadzorem niemieckim. Te buty mają zastosowanie militarne - były noszone przez żołnierzy w trudnych warunkach polowych. Materiał jest bardziej zdecydowany, podeszwa grubsza. Wewnątrz widać oznaczenia producenta, ale także znaki niemckie. Paradoksalnie, grudziądzkie gumiaeki chroniły żołnierzy po obu stronach frontu.",
+      "fact": "Gumiaeki Grudziądza były tak cenione, że nawet podczas wojny stanowiły walutę wymienną. Można było za parę nowych gumiaków kupić bilet kolejowy lub kilogram kaszy."
+    },
+    {
+      "title": "Gumiaeki epoki PRL",
+      "author": "Combine Obuwia 'Grudziadz'",
+      "year": "1960",
+      "description": "Powojenne gumiaeki PRL to ikona powojennej codzienności każdego Polaka. Te buty miały charakterystyczną czerwoną podeszwę i żółte wstawki boczne. Były niezniszczalne, praktyczne i tanie - każde dziecko w Polsce miało parę na jesień i wiosnę. Konstrukcja jest prosta, ale genialnie przemyślana. Gumiaeki PRL nosily pokolenia Polaków do szkoły, na basen, w góry. Ich charakterystyczny zapach kauczuku budził wspomnienia bezpowrotnej przeszłości.",
+      "fact": "Gumiaeki PRL były tak popularne, że stały się symbolem Polski na międzynarodowych rynkach. Kiedy Polskie miasta zaczęły się otwierać na Zachód w latach 70-tych, przyjezdni kupowali gumiaeki 'PRL' jako pamiątki autentycznej, socjalistycznej Polski."
+    },
+    {
+      "title": "Gumiaeki sportowe",
+      "author": "Grudziądzka Fabryka Obuwia",
+      "year": "1975",
+      "description": "Lata siedemdziesiąte przyniosły rewolucję w projektowaniu gumiaków. Te buty mają wstawki siateczkowe, bardziej ergonomiczną konstrukcję, lepszą amortyzację. Kolory są odważniejsze - niebieski, zielony, pomarańczowy. Były przeznaczone dla sportowców, turystów i młodzieży chcącej wyrazić swoją niezależność. Widać tu wpływ zachodnich trendów - wyprofilowana pięta, podeszwa o gradiencie, system zamykania na rzepy.",
+      "fact": "Gumiaeki sportowe Grudziądza były używane przez polskich sportowców na międzynarodowych zawodach. Lekkoatleta Irena Szydłowska, mistrzyni olimpijska, biegała w gumiaków produkowanych w tym mieście."
+    },
+    {
+      "title": "Gumiaeki dziecięce - polska klasyka",
+      "author": "Zakład Dziecięcy GRUDZIADZ",
+      "year": "1985",
+      "description": "Te małe gumiaeki, rozmiar 22-23, to najcenniejsze pamiątki dla każdej matki w Polsce. Mają miękką, podatną podeszwę, bezpieczne zamknięcie na rzepy, wzmocnione palce. Kolory są żywe i radosne - są różowe, żółte, niebieskie. Każde polskie dziecko posiadało takie buty. Były odporne na błoto, piasek, deszcz. Grały w nich dzieci na boisku, w parku, na boisku do piłki. Zapachy, dotyki, wspomnienia - te gumiaeki to czysty nostalgia.",
+      "fact": "Polska produkcja gumiaków dla dzieci była tak popularna, że był długie kolejki rodziców czekających na nowe partie w sklepach. Niektóre osoby przechowują gumiaeki swojego dziecka jako bezcenne pamiątki przez całe życie."
+    },
+    {
+      "title": "Nowoczesne gumiaeki XXI wieku",
+      "author": "Grudziadz Modern Footwear",
+      "year": "2015",
+      "description": "Współczesne gumiaeki to połączenie tradycji i nowoczesności. Ta para ma ortopedyczną wstawkę, termoaktywny materiał, system odwodniający, antyalergiczną podszewkę. Producent użył materiałów ekologicznych, wyprodukowanych z recyklingu. Projekt nawiązuje do historii - widać tu reminiscencje starego stylu, ale w ultranowoczesnym wydaniu. Są lekkie, elastyczne, wygodne. Mogą być noszone zarówno do dreszczy jak i do wizyt na mieście.",
+      "fact": "Grudziądz nigdy nie przestał być światowym liderem w produkcji gumiaków. Dziś, w XXI wieku, fabryki z tego miasta produkują buty dla największych międzynarodowych marek. Gumiaeki 'Made in Grudziadz' są sprzedawane w ponad sto krajach świata."
+    }
+  ]
+}
