@@ -317,6 +317,25 @@
       cursor: not-allowed;
     }
 
+    .art-indicator {
+      width: 96px;
+      height: 96px;
+      position: relative;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--gold);
+      border-radius: 8px;
+      animation: pulse 2s infinite;
+    }
+
+    .large-button {
+      padding: 1.5rem !important;
+      font-size: 1rem !important;
+      height: auto !important;
+    }
+
     .hidden {
       display: none !important;
     }
@@ -337,6 +356,7 @@
   <script src="src/lib/astronomy.js"></script>
   <script src="src/lib/tts.js"></script>
   <script src="src/lib/llm.js"></script>
+  <script src="src/lib/museumExample.js"></script>
   <script src="src/components.js"></script>
   <script src="src/app.js"></script>
 </body>

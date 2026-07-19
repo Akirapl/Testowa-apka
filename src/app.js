@@ -2,13 +2,14 @@
 
 window.app = {
   state: {
-    screen: "onboarding",  // onboarding | personalization | session
+    screen: "version-selector",  // version-selector | onboarding | session
+    version: null,  // "astronomy" | "museum"
     profile: null,
     provider: null,
-    personalization: "",
     currentStepIndex: 0,
     steps: [],
-    location: { lat: 50.05, lon: 14.47 }  // Praga (domyślna)
+    location: { lat: 50.05, lon: 14.47 },  // Praga (domyślna)
+    curatorPrompt: null  // dla wersji muzeum
   },
 
   init() {
@@ -19,17 +20,11 @@ window.app = {
   render() {
     const app = document.getElementById("app");
 
-    console.log("RENDER: current screen =", this.state.screen);
-    console.log("STATE:", JSON.stringify(this.state, null, 2));
-
-    if (this.state.screen === "onboarding") {
-      console.log("→ Rendering ONBOARDING");
+    if (this.state.screen === "version-selector") {
+      app.innerHTML = window.Components.renderVersionSelector(this.state);
+    } else if (this.state.screen === "onboarding") {
       app.innerHTML = window.Components.renderOnboarding(this.state);
-    } else if (this.state.screen === "personalization") {
-      console.log("→ Rendering PERSONALIZATION");
-      app.innerHTML = window.Components.renderPersonalization(this.state);
     } else if (this.state.screen === "session") {
-      console.log("→ Rendering SESSION");
       // Przygotuj kroki jeśli jeszcze nie są
       if (this.state.steps.length === 0) {
         this.prepareSteps();
@@ -56,6 +51,50 @@ window.app = {
     }
   },
 
+  selectVersion(versionId) {
+    this.state.version = versionId;
+    this.state.screen = "onboarding";
+    this.render();
+  },
+
+  async loadMuseumQR() {
+    // Spróbuj załadować QR kod
+    const qrInput = document.getElementById("curatorQR");
+    const qrText = qrInput?.value?.trim();
+
+    if (!qrText) {
+      alert("Wklej tekst z QR kodu kuratora");
+      return;
+    }
+
+    // Parsuj QR data (format: JSON z systemPrompt, objects array)
+    try {
+      const data = JSON.parse(qrText);
+      this.state.curatorPrompt = data.systemPrompt || "";
+      this.state.steps = (data.objects || []).map((obj, idx) => ({
+        target: obj.title,
+        narration: obj.description || "",
+        fact: obj.fact || "",
+        author: obj.author || "",
+        year: obj.year || "",
+        index: idx
+      }));
+
+      console.log("✅ Museum data loaded from QR:", {
+        prompt: this.state.curatorPrompt ? "loaded" : "none",
+        objects: this.state.steps.length
+      });
+
+      this.state.screen = "session";
+      this.state.currentStepIndex = 0;
+      this.render();
+      await this.playFirstStep();
+    } catch (error) {
+      alert("Błąd w danych QR: " + error.message);
+      console.error("QR parse error:", error);
+    }
+  },
+
   selectProfile(profileId) {
     this.state.profile = profileId;
     this.render();
@@ -67,11 +106,8 @@ window.app = {
   },
 
   async startSession() {
-    console.log("startSession() called");
     const apiKeyInput = document.getElementById("apiKey");
     const apiKey = apiKeyInput?.value;
-
-    console.log("apiKey:", apiKey ? "PROVIDED" : "MISSING");
 
     if (!apiKey) {
       alert("Podaj API key");
@@ -81,56 +117,12 @@ window.app = {
     // Inicjalizuj LLM
     try {
       window.LLM.init(this.state.provider, apiKey);
-      console.log("LLM initialized with provider:", this.state.provider);
     } catch (error) {
       alert("Błąd inicjalizacji LLM: " + error.message);
       return;
     }
 
-    // Testuj klucz API (ale pozwól kontynuować)
-    console.log("Testing API key...");
-    const isKeyValid = await window.LLM.testKey();
-
-    if (!isKeyValid) {
-      console.warn("⚠️ API key test failed - będę używać offline fallback steps");
-      alert("⚠️ Klucz API nieprawidłowy lub sieć niedostępna.\n\nBędę używać pre-napisane opowiadania (offline mode).");
-    } else {
-      console.log("✅ API key is valid!");
-    }
-
-    // Przejdź do personalizacji (niezależnie od wyniku testu)
-    console.log("Setting screen to: personalization");
-    this.state.screen = "personalization";
-    this.render();
-  },
-
-  async startPersonalizedSession() {
-    console.log("startPersonalizedSession() called");
-    const personalizationInput = document.getElementById("personalization");
-    this.state.personalization = personalizationInput?.value || "";
-
-    console.log("Personalization:", this.state.personalization);
-
-    // Wyślij personalizację na backend
-    if (this.state.personalization) {
-      try {
-        const response = await fetch("/api/personalization", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            profile: this.state.profile,
-            personalization: this.state.personalization
-          })
-        });
-        const result = await response.json();
-        console.log("✅ Backend response:", result);
-      } catch (error) {
-        console.error("❌ Failed to send personalization:", error);
-      }
-    }
-
-    // Przejdź do sesji
-    console.log("Setting screen to: session");
+    // Pomiń kalibrację — przejdź bezpośrednio do sesji
     this.state.screen = "session";
     this.state.currentStepIndex = 0;
     this.render();
@@ -138,11 +130,16 @@ window.app = {
   },
 
   prepareSteps() {
-    // Przygotuj kroki sesji — na razie fallback
-    this.state.steps = window.FALLBACK_STEPS.map((step, idx) => ({
-      ...step,
-      index: idx
-    }));
+    if (this.state.version === "museum") {
+      // Museum mode — czekaj na wczytanie QR
+      this.state.steps = [];
+    } else {
+      // Astronomy mode — fallback steps
+      this.state.steps = window.FALLBACK_STEPS.map((step, idx) => ({
+        ...step,
+        index: idx
+      }));
+    }
   },
 
   async playFirstStep() {
@@ -174,31 +171,32 @@ window.app = {
 
     // Pobierz lub wygeneruj krok
     try {
-      const context = {
-        profile: this.state.profile,
-        currentStep: this.state.currentStepIndex + 1,
-        totalSteps: this.state.steps.length,
-        object: this.state.steps[this.state.currentStepIndex],
-        previousObjects: this.state.steps.slice(0, this.state.currentStepIndex),
-        personalization: this.state.personalization
-      };
-
-      // Próbuj wygenerować z LLM
       let step;
-      try {
-        console.log("📡 Calling LLM.generateStep with context:", context);
-        const llmResponse = await window.LLM.generateStep(context);
-        console.log("✅ LLM response received:", llmResponse);
-        step = {
-          ...this.state.steps[this.state.currentStepIndex],
-          narration: llmResponse.narration,
-          fact: llmResponse.fact
-        };
-      } catch (llmError) {
-        console.error("❌ LLM FAILED with error:", llmError.message || llmError);
-        console.warn("📚 Using fallback step instead");
-        // Fallback — użyj pre-napisanego kroku
+
+      if (this.state.version === "museum") {
+        // Museum mode — użyj pre-loaded descriptions z QR
         step = this.state.steps[this.state.currentStepIndex];
+      } else {
+        // Astronomy mode — generuj z LLM
+        const context = {
+          profile: this.state.profile,
+          currentStep: this.state.currentStepIndex + 1,
+          totalSteps: this.state.steps.length,
+          object: this.state.steps[this.state.currentStepIndex],
+          previousObjects: this.state.steps.slice(0, this.state.currentStepIndex)
+        };
+
+        try {
+          const llmResponse = await window.LLM.generateStep(context);
+          step = {
+            ...this.state.steps[this.state.currentStepIndex],
+            narration: llmResponse.narration,
+            fact: llmResponse.fact
+          };
+        } catch (llmError) {
+          console.warn("LLM failed, using fallback:", llmError);
+          step = this.state.steps[this.state.currentStepIndex];
+        }
       }
 
       // Zaktualizuj krok
