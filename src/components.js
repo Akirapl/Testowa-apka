@@ -160,7 +160,7 @@ window.Components = {
 
         <div class="section">
           <label class="section-label">API KEY</label>
-          <input id="apiKey" type="password" placeholder="Wpisz klucz API" style="
+          <input id="apiKey" type="password" placeholder="Wpisz klucz API" value="${state.provider === 'mistral' ? 'c3FeKt1r7PLgPoU001r7pzmV2fWOjmSr' : ''}" style="
             width: 100%;
             padding: 0.5rem;
             background: var(--ember-dim);
@@ -170,6 +170,7 @@ window.Components = {
             font-family: 'IBM Plex Mono', monospace;
             margin-bottom: 1rem;
           " />
+          ${state.provider === 'mistral' ? '<p style="font-size: 0.7rem; color: var(--gold); margin-top: 0.5rem;">✓ Klucz Mistral prefilled</p>' : ''}
         </div>
 
         <div class="flex-spacer"></div>
