@@ -1,0 +1,27 @@
+ZENIT Museum Mode — Example QR Data (JSON)
+==========================================
+
+Copy the JSON below and paste it into the "KOD QR KURATORA" field to test museum mode:
+
+---START---
+{"systemPrompt":"Jesteś opiekunem wystawy sztuki. Opisujesz dzieła głosowo, zawsze dodając historię autora i kontekst.","objects":[{"title":"Nocny spacer","author":"Vincent van Gogh","year":"1890","description":"To słynny obraz van Gogha namalowany w Arles. Pokazuje ulicę nocą oświetloną gazowymi latarniami. Żółte światła odbijają się od błękitnego nocnego nieba. Kompozycja jest niezwykle dynamiczna — perspektywa pobiegów w kierunku horyzontu przyciąga widza do głębi obrazu.","fact":"Van Gogh zamalował ten obraz świeżą farbą jeszcze na mokrej warstwie poprzedniej. Ta technika zwana alla prima daje obrazowi niesamowitą energię."},{"title":"Całunek","author":"Gustav Klimt","year":"1908","description":"Jedno z najsławniejszych dzieł art déco. Para w jedwabnych szatach złotego koloru, otoczona ornamentami. Ich twarze przypominają bizuterię — stylizowane, minimalistyczne. Całkowita roztopienie się w ornamencie, w ozdobie, w blasku złota.","fact":"To dzieło jest ikoną wiedeńskiego art déco. Klimt użył tutaj rzeczywistego złota w farbie."},{"title":"Cisza","author":"Agnes Martin","year":"1958","description":"Minimalistyczne dzieło składające się z precyzyjnych linii narysowanych ołówkiem na białym tle. Linie są prawie perfekcyjne, ale nie całkowicie — ta ledwa dostrzegalna niedoskonałość daje dziełu życie i człowieczeństwo.","fact":"Agnes Martin pracowała na empirystycznym podejściu — jej linie reprezentują naturalną strukturę, porządek natury."}]}
+---END---
+
+Instructions:
+1. Open ZENIT in your browser
+2. Click the "MUZEUM" button
+3. Copy the JSON above (entire string between ---START--- and ---END---)
+4. Paste it into the "KOD QR KURATORA" text field
+5. Click "Wczytaj wystawę"
+
+You should now see the first artwork (Nocny spacer) and be able to navigate through the exhibition.
+
+---
+
+For creating your own QR codes:
+- Prepare a JSON following the format above
+- Generate a QR code from the JSON (use any QR generator online)
+- Print/display the QR code at your museum exhibition
+- Visitors scan it and ZENIT loads your exhibition data
+
+Enjoy!
