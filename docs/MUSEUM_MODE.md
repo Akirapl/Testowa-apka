@@ -1,63 +1,54 @@
-# ZENIT Museum Mode — Instrukcja dla Kuratora Muzeum
+# ZENIT Muzeum — Przewodnik dla Kuratora
 
-## Przegląd
+## Jak to działa
 
-ZENIT ma teraz dwie wersje:
-- **Astronomia** — przewodnik po niebie nocnym (głosowy)
-- **Muzeum** — oprowadzanie po wystawie (głosowe + wizualne metadane)
+1. Zwiedzający otwiera ZENIT, przechodzi ekran "Poznajmy się" (personalizacja + profil + klucz LLM)
+2. Na ekranie "Co chcesz robić?" wybiera **🎨 WYSTAWY**
+3. Widzi siatkę gotowych wystaw (posortowaną wg odległości od swojej lokalizacji, jeśli ją udostępnił) + pole do wklejenia własnego JSON-a wystawy
+4. Po wybraniu wystawy ZENIT **generuje żywą narrację przez LLM** dla każdego eksponatu (nie czyta tekstu z pliku wprost — patrz niżej) i odtwarza ją głosowo
+5. Zwiedzający przechodzi między dziełami przyciskiem "Dalej"
 
-## Tryb Muzeum — Jak to działa
+**Wymaga skonfigurowanego klucza LLM** (wpisanego na ekranie "Poznajmy się") — bez niego appka nie przejdzie dalej. Jeśli generacja danego kroku zawiedzie (np. przejściowy błąd sieci), appka pokazuje czytelny komunikat + przycisk "Spróbuj ponownie" — nigdy nie czyta surowego tekstu z pliku jako awaryjnej zastępki.
 
-1. Użytkownik uruchamia ZENIT
-2. Wybiera **MUZEUM** zamiast ASTRONOMII
-3. Wkleja kod QR przygotowany przez kuratora (jako JSON)
-4. ZENIT czyta dzieła ze sprawnością i odczytuje opisy głosowo
-5. Użytkownik przechodzi między dziełami stukając przyciski
-
-## Format QR — JSON Kuratora
-
-Kolektor przygotowuje plik JSON zawierający:
+## Format pliku wystawy (JSON)
 
 ```json
 {
-  "systemPrompt": "Jesteś opiekunem wystawy w muzeum...",
+  "systemPrompt": "Jesteś przewodnikiem po wystawie...",
+  "location": { "city": "Warszawa", "lat": 52.2297, "lon": 21.0122 },
   "objects": [
     {
       "title": "Tytuł dzieła",
       "author": "Imię artysty",
       "year": "Rok",
-      "description": "Opis dzieła do odczytania głosowo. Może być długi i szczegółowy.",
-      "fact": "Ciekawostka dodatkowa — np. technika, historia, anegdota"
+      "description": "Notatki kuratora o dziele — surowy materiał źródłowy dla LLM.",
+      "fact": "Ciekawostka dodatkowa — technika, historia, anegdota."
     }
   ]
 }
 ```
 
-## Pole po polu
+### Pole po polu
 
-### `systemPrompt` (opcjonalnie)
-Instrukcja dla potencjalnego LLM (na przyszłość). Teraz ignorowane w v1, ale dobrze je przygotować.
+- **`systemPrompt`** (opcjonalnie, zalecane) — **aktywnie używane** jako `system` message dla LLM przy generowaniu narracji każdego eksponatu tej wystawy. To tutaj definiujesz ton przewodnika ("jesteś opiekunem wystawy sztuki nowoczesnej, mówisz z pasją o...").
+- **`location`** (opcjonalnie) — `{city, lat, lon}`. Używane do sortowania listy wystaw wg odległości od zwiedzającego ("Najbliżej Ciebie", odznaka "≈X km"). Bez tego pola appka i tak działa, tylko bez sortowania.
+- **`objects`** — tablica eksponatów:
+  - **`title`** (wymagane) — nazwa dzieła
+  - **`author`** (opcjonalnie) — artysta
+  - **`year`** (opcjonalnie) — rok powstania
+  - **`description`** (wymagane) — **surowe notatki kuratora**, nie finalny tekst do odczytania. LLM przekształca je w naturalną, żywą narrację dostosowaną do profilu i personalizacji zwiedzającego (np. inny ton dla "Laika" niż dla "Profesjonalisty").
+  - **`fact`** (opcjonalnie) — dodatkowa ciekawostka, też surowy materiał dla LLM
 
-Przykład:
-```
-Jesteś opiekunem wystawy dedykowanej sztuce nowoczesnej. Opisujesz dzieła sztuki w wciągający sposób, dodając smaczki na temat artystów, technik i historii. Mów naturalnie, jak przewodnik dla osoby.
-```
+### Ważne: opis ≠ finalna narracja
 
-### `objects` — tablica dzieł
-
-Każde dzieło musi mieć:
-
-- **`title`** (wymagane) — nazwa dzieła, wyświetlana na górze
-- **`author`** (opcjonalnie) — imię/nazwisko artysty
-- **`year`** (opcjonalnie) — rok powstania
-- **`description`** (wymagane) — opis do odczytania głosowo (polskie słowa, naturalne)
-- **`fact`** (opcjonalnie) — dodatkowa ciekawostka wyświetlona jako drobny tekst
+`description`/`fact` **nie są** czytane wprost przez TTS — to materiał źródłowy. LLM za każdym razem generuje nową wersję narracji na bazie tych notatek + `systemPrompt` + profilu i personalizacji zwiedzającego. Ten sam eksponat może więc brzmieć inaczej dla różnych osób. Pisz notatki rzeczowo i szczegółowo — im więcej konkretów podasz, tym lepszy materiał dla LLM.
 
 ## Przykład pełny
 
 ```json
 {
   "systemPrompt": "Jesteś przewodnikiem po galerii sztuki współczesnej. Opisujesz dzieła głosowo, zawsze dodając historię autora i kontekst czasowy.",
+  "location": { "city": "Warszawa", "lat": 52.2297, "lon": 21.0122 },
   "objects": [
     {
       "title": "Nocny spacer",
@@ -70,47 +61,36 @@ Każde dzieło musi mieć:
       "title": "Całunek",
       "author": "Gustav Klimt",
       "year": "1908",
-      "description": "Jedno z najsławniejszych dzieł art déco. Para w jedwabnych szatach złotego koloru, otoczona ornamentami. Ich twarze przypominają bizuterię — stylizowane, minimalistyczne. Całkowita roztopienie się w ornamencie, w ozdobie, w blasku złota.",
-      "fact": "To dzieło jest ikoną wiedeńskiego art déco. Klimt użył tutaj rzeczywistego złota w farbie — malatura zwana chrysografia."
+      "description": "Jedno z najsławniejszych dzieł art déco. Para w jedwabnych szatach złotego koloru, otoczona ornamentami.",
+      "fact": "Klimt użył tutaj rzeczywistego złota w farbie — malatura zwana chrysografia."
     }
   ]
 }
 ```
 
-## Jak przygotować QR Code
+Skopiuj taki JSON i wklej do pola "LUB WKLEJ SWÓJ KOD QR" na ekranie wyboru wystawy, żeby przetestować.
 
-1. Przygotuj JSON w edytorze tekstu (lub skopiuj z exemplo powyżej)
-2. Wklej JSON do generatora QR (np. `qr-server.com` lub `qrcode.com`)
-3. Wygeneruj kod QR
-4. Oddziel go z wystawy (na telefonie, w drucie, na ścianach)
+## Gotowe przykładowe wystawy (w repo)
 
-## Testowanie
+Cztery gotowe wystawy w `docs/*.json`, dostępne od razu w appce jako kafelki do wyboru:
 
-Aby przetestować:
+| Plik | Temat | Miasto |
+|---|---|---|
+| `gumiak-grudziadz.json` | Historia polskich gumiaków (1927-2015) | Grudziądz |
+| `exhibit-zabytkowe-mozaiki.json` | Mozaiki rzymskie z okresu antycznego | Warszawa |
+| `exhibit-natura-owady.json` | Entomologia — od Apollo do Herculesa | Wrocław |
+| `exhibit-sztuka-nowoczesna.json` | Sztuka XX-XXI wieku: Rothko, Paik, Banksy | Łódź |
 
-1. Otwórz ZENIT w przeglądarce
-2. Kliknij **MUZEUM**
-3. Skopiuj JSON z przykładu powyżej
-4. Wklej do pola "KOD QR KURATORA"
-5. Kliknij "Wczytaj wystawę"
+## Jak przygotować QR kod dla zwiedzających
 
-## Co się stanie
+1. Przygotuj JSON według formatu powyżej
+2. Wklej go do dowolnego generatora QR (np. `qr-code-generator.com`)
+3. Wygeneruj i wydrukuj kod QR, umieść przy wystawie
+4. Zwiedzający na razie **wkleja treść ręcznie** w pole tekstowe — realne skanowanie kamerą nie jest jeszcze zaimplementowane (patrz "Przyszłe ulepszenia")
 
-- ZENIT wczyta dzieła ze sprawnością
-- Wyświetli tytuł, autora, rok na górze
-- Odczyta opis głosowo
-- Pokaże fakt jako tekst mały poniżej
-- Użytkownik klika "Dalej" aby przejść do następnego dzieła
+## Przyszłe ulepszenia (nie zrobione)
 
-## Przyszłe ulepszenia (v2+)
-
-- [ ] Dynamiczne QR scanning z kamery
-- [ ] LLM generate pełnych opisów na bazie systemPrompt
-- [ ] Foto dzieła (inline lub z URL)
-- [ ] Audio narracji w różnych języków
-- [ ] Geolokalizacja — następne dzieło na bazie lokacji w muzeum
-- [ ] Statystyka — ile czasu na każdym dziele
-
----
-
-**Pytania?** Skontaktuj się z zespołem ZENIT. Gotowy plik JSON wyślij na support@zenit.art.
+- [ ] Realne skanowanie QR kamerą telefonu (dziś: wklejenie tekstu)
+- [ ] Zdjęcia dzieł (inline lub lightbox)
+- [ ] Narracja w wielu językach
+- [ ] Statystyki (ile czasu na każdym eksponacie, ścieżka zwiedzania)
