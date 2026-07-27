@@ -77,7 +77,7 @@ window.Components = {
 
         <div class="section">
           <label class="section-label">API KEY</label>
-          <input id="apiKey" type="password" placeholder="Wpisz klucz API" value="${state.provider === 'mistral' ? 'c3FeKt1r7PLgPoU001r7pzmV2fWOjmSr' : ''}" style="
+          <input id="apiKey" type="password" placeholder="Wpisz klucz API" value="${state.apiKey || (state.provider === 'mistral' ? 'c3FeKt1r7PLgPoU001r7pzmV2fWOjmSr' : '')}" style="
             width: 100%;
             padding: 0.5rem;
             background: var(--ember-dim);
@@ -275,9 +275,9 @@ window.Components = {
           </div>
 
           <button class="button-bottom"
-            ${isLastStep ? 'disabled' : ''}
+            ${isLastStep || state.isGenerating ? 'disabled' : ''}
             onclick="window.app.nextStep()">
-            ${isLastStep ? 'Koniec wystawy' : (state.currentStepIndex === 0 ? 'Zaczynam → dalej' : 'Dalej')}
+            ${isLastStep ? 'Koniec wystawy' : state.isGenerating ? 'Generuję...' : (state.currentStepIndex === 0 ? 'Zaczynam → dalej' : 'Dalej')}
           </button>
 
           ${this.renderDebugPanel(state)}
@@ -313,9 +313,9 @@ window.Components = {
         </div>
 
         <button class="button-bottom"
-          ${isLastStep ? 'disabled' : ''}
+          ${isLastStep || state.isGenerating ? 'disabled' : ''}
           onclick="window.app.nextStep()">
-          ${isLastStep ? 'Sesja zakończona' : (state.currentStepIndex === 0 ? 'Znalazłem → dalej' : 'Dalej')}
+          ${isLastStep ? 'Sesja zakończona' : state.isGenerating ? 'Generuję...' : (state.currentStepIndex === 0 ? 'Znalazłem → dalej' : 'Dalej')}
         </button>
 
         ${this.renderDebugPanel(state)}

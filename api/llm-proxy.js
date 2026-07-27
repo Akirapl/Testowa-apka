@@ -25,7 +25,7 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({
             model,
-            max_tokens: 500,
+            max_tokens: 2000,
             system: systemPrompt || "",
             messages: [{ role: "user", content: userMessage || "Test" }]
           })
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({
             model,
-            max_tokens: 500,
+            max_tokens: 2000,
             temperature: 0.8,
             messages: [
               { role: "system", content: systemPrompt || "" },
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({
             model,
-            max_tokens: 500,
+            max_tokens: 2000,
             temperature: 0.8,
             messages: [
               { role: "system", content: systemPrompt || "" },

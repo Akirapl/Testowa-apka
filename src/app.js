@@ -15,7 +15,9 @@ window.app = {
     needsManualLocation: false,
     keyError: null,
     museumError: null,
-    debugLog: []
+    debugLog: [],
+    isGenerating: false,
+    apiKey: ""
   },
 
   init() {
@@ -65,21 +67,32 @@ window.app = {
 
   // ==================== EKRAN 1: POZNAJMY SIĘ ====================
 
+  // Zapisuje bieżącą (jeszcze niezatwierdzoną) zawartość pól tekstowych do state —
+  // wywoływane przed każdym render() na tym ekranie, żeby świeży innerHTML nie
+  // zamazywał tego co użytkownik właśnie wpisał (pełny re-render nadpisuje DOM).
+  syncPersonalizationInputs() {
+    const personalizationInput = document.getElementById("personalization");
+    const apiKeyInput = document.getElementById("apiKey");
+    if (personalizationInput) this.state.personalization = personalizationInput.value;
+    if (apiKeyInput) this.state.apiKey = apiKeyInput.value;
+  },
+
   selectProfile(profileId) {
+    this.syncPersonalizationInputs();
     this.state.profile = profileId;
     this.render();
   },
 
   selectProvider(providerId) {
+    this.syncPersonalizationInputs();
     this.state.provider = providerId;
     this.render();
   },
 
   async confirmPersonalization() {
-    const personalizationInput = document.getElementById("personalization");
-    const apiKeyInput = document.getElementById("apiKey");
-    this.state.personalization = personalizationInput?.value?.trim() || "";
-    const apiKey = apiKeyInput?.value;
+    this.syncPersonalizationInputs();
+    this.state.personalization = this.state.personalization.trim();
+    const apiKey = this.state.apiKey;
 
     if (!this.state.profile || !this.state.provider) {
       this.state.keyError = "Wybierz profil i dostawcę LLM.";
@@ -326,6 +339,13 @@ window.app = {
   },
 
   async nextStep() {
+    // Blokada reentrancji — bez tego szybkie podwójne kliknięcie "Dalej" (np. gdy
+    // LLM odpowiada wolno) uruchamia dwa równoległe wywołania naraz, myląc stan.
+    if (this.state.isGenerating) {
+      this.log("nextStep: zignorowano — poprzednie generowanie jeszcze trwa");
+      return;
+    }
+
     if (this.state.currentStepIndex >= this.state.steps.length - 1) {
       this.state.currentStepIndex = this.state.steps.length;
       this.render();
@@ -334,30 +354,36 @@ window.app = {
 
     const nextIndex = this.state.currentStepIndex + 1;
     this.state.currentStepIndex = nextIndex;
+    this.state.isGenerating = true;
     this.log(`nextStep: tryb=${this.state.version} krok=${nextIndex}`);
 
-    if (this.state.version === "museum") {
-      this.state.museumError = null;
-      this.render();
-
-      try {
-        await this.generateMuseumNarration(nextIndex);
+    try {
+      if (this.state.version === "museum") {
+        this.state.museumError = null;
         this.render();
-        await window.TTS.speak(this.state.steps[nextIndex].narration);
-      } catch (error) {
-        this.log(`Muzeum krok ${nextIndex}: ❌ błąd — ${error.message || error}`);
-        this.state.museumError = "Nie udało się wygenerować opisu — sprawdź klucz API i spróbuj ponownie.";
-        this.render();
-      }
-    } else {
-      await this.generateAstronomyNarration(nextIndex);
-      this.render();
 
-      try {
-        await window.TTS.speak(this.state.steps[nextIndex].narration);
-      } catch (error) {
-        console.error("TTS Error:", error);
+        try {
+          await this.generateMuseumNarration(nextIndex);
+          this.render();
+          await window.TTS.speak(this.state.steps[nextIndex].narration);
+        } catch (error) {
+          this.log(`Muzeum krok ${nextIndex}: ❌ błąd — ${error.message || error}`);
+          this.state.museumError = "Nie udało się wygenerować opisu — sprawdź klucz API i spróbuj ponownie.";
+          this.render();
+        }
+      } else {
+        await this.generateAstronomyNarration(nextIndex);
+        this.render();
+
+        try {
+          await window.TTS.speak(this.state.steps[nextIndex].narration);
+        } catch (error) {
+          console.error("TTS Error:", error);
+        }
       }
+    } finally {
+      this.state.isGenerating = false;
+      this.render();
     }
   },
 
