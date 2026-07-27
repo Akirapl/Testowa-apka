@@ -225,6 +225,64 @@ window.LLM = {
     return prompt;
   },
 
+  // Buduj prompt dla LLM — wersja muzealna (opis kuratora jako materiał źródłowy)
+  buildMuseumPrompt(context) {
+    const { profile, currentStep, totalSteps, object, previousObjects, personalization } = context;
+
+    let prompt = `Jesteś w kroku ${currentStep}/${totalSteps} oprowadzania po wystawie.\n`;
+    prompt += `Profil zwiedzającego: ${profile}\n`;
+
+    if (personalization && personalization.trim()) {
+      prompt += `O zwiedzającym: ${personalization}\n\n`;
+    }
+
+    prompt += `Bieżące dzieło: ${object.title}\n`;
+    if (object.author) prompt += `Autor: ${object.author}\n`;
+    if (object.year) prompt += `Rok: ${object.year}\n`;
+    prompt += `Materiały od kuratora (surowe notatki — przekształć je w żywą narrację, nie czytaj wprost):\n`;
+    prompt += `Opis: ${object.description}\n`;
+    if (object.fact) prompt += `Ciekawostka: ${object.fact}\n`;
+
+    if (previousObjects.length > 0) {
+      prompt += `Poprzednio zwiedzone: ${previousObjects.map(o => o.name).join(", ")}\n`;
+    }
+
+    prompt += `\nWygeneruj naturalną, żywą narrację w polskim dla tego dzieła, na bazie materiałów od kuratora. JEŚLI jest opis zwiedzającego — dostosuj narrację do jego zainteresowań, profesji, doświadczenia. Odpowiedź musi być poprawnym JSON z polami: narration (tekst do TTS), fact (ciekawostka), continue (boolean).`;
+
+    return prompt;
+  },
+
+  // Wygeneruj krok narracji muzealnej — system prompt to instrukcja kuratora z pliku wystawy
+  async generateMuseumStep(context, systemPromptOverride) {
+    if (!this.apiKey) {
+      throw new Error("API key not configured");
+    }
+
+    const systemPrompt = systemPromptOverride || window.SYSTEM_PROMPT;
+    const userMessage = this.buildMuseumPrompt(context);
+
+    try {
+      let response;
+
+      switch (this.provider) {
+        case "claude":
+          response = await this.callClaude(systemPrompt, userMessage);
+          break;
+        case "openai":
+          response = await this.callOpenAI(systemPrompt, userMessage);
+          break;
+        case "mistral":
+          response = await this.callMistral(systemPrompt, userMessage);
+          break;
+      }
+
+      return this.parseResponse(response);
+    } catch (error) {
+      console.error("LLM Error (museum):", error);
+      throw error;
+    }
+  },
+
   // Parsuj JSON response z LLM
   parseResponse(text) {
     try {

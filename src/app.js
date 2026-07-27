@@ -2,16 +2,19 @@
 
 window.app = {
   state: {
-    screen: "interest-selector",  // interest-selector | version-selector | onboarding | session
-    interest: null,  // "history" | "nature" | "art" itp
-    version: null,  // "astronomy" | "museum"
-    profile: null,
+    screen: "personalization",  // personalization | mode-selector | session
+    personalization: "",
+    profile: null,      // "layperson" | "enthusiast" | "expert" | "professional"
     provider: null,
+    version: null,      // "astronomy" | "museum" — ustawiane w kroku 2
+    selectedExhibit: null,
+    curatorPrompt: null,
     currentStepIndex: 0,
     steps: [],
-    location: { lat: 50.05, lon: 14.47 },  // Praga (domyślna)
-    curatorPrompt: null,  // dla wersji muzeum
-    selectedExhibit: null  // nazwa wybranej wystawy
+    location: { lat: 50.05, lon: 14.47 },  // Praga — ostateczny fallback
+    needsManualLocation: false,
+    keyError: null,
+    museumError: null
   },
 
   init() {
@@ -22,17 +25,11 @@ window.app = {
   render() {
     const app = document.getElementById("app");
 
-    if (this.state.screen === "interest-selector") {
-      app.innerHTML = window.Components.renderInterestSelector(this.state);
-    } else if (this.state.screen === "version-selector") {
-      app.innerHTML = window.Components.renderVersionSelector(this.state);
-    } else if (this.state.screen === "onboarding") {
-      app.innerHTML = window.Components.renderOnboarding(this.state);
+    if (this.state.screen === "personalization") {
+      app.innerHTML = window.Components.renderPersonalization(this.state);
+    } else if (this.state.screen === "mode-selector") {
+      app.innerHTML = window.Components.renderModeSelector(this.state);
     } else if (this.state.screen === "session") {
-      // Przygotuj kroki jeśli jeszcze nie są
-      if (this.state.steps.length === 0) {
-        this.prepareSteps();
-      }
       app.innerHTML = window.Components.renderSession(this.state);
     }
   },
@@ -55,88 +52,7 @@ window.app = {
     }
   },
 
-  selectInterest(interestId) {
-    this.state.interest = interestId;
-    this.state.screen = "version-selector";
-    this.render();
-  },
-
-  selectVersion(versionId) {
-    this.state.version = versionId;
-    this.state.screen = "onboarding";
-    this.render();
-  },
-
-  async loadExhibit(exhibitName) {
-    // Załaduj gotową wystawę z JSON
-    try {
-      const response = await fetch(`/docs/${exhibitName}.json`);
-      if (!response.ok) throw new Error("Exhibit not found");
-
-      const data = await response.json();
-      this.state.curatorPrompt = data.systemPrompt || "";
-      this.state.steps = (data.objects || []).map((obj, idx) => ({
-        target: obj.title,
-        narration: obj.description || "",
-        fact: obj.fact || "",
-        author: obj.author || "",
-        year: obj.year || "",
-        index: idx
-      }));
-      this.state.selectedExhibit = exhibitName;
-
-      console.log("✅ Exhibit loaded:", {
-        name: exhibitName,
-        objects: this.state.steps.length
-      });
-
-      this.state.screen = "session";
-      this.state.currentStepIndex = 0;
-      this.render();
-      await this.playFirstStep();
-    } catch (error) {
-      alert("Błąd wczytywania wystawy: " + error.message);
-      console.error("Exhibit load error:", error);
-    }
-  },
-
-  async loadMuseumQR() {
-    // Spróbuj załadować QR kod
-    const qrInput = document.getElementById("curatorQR");
-    const qrText = qrInput?.value?.trim();
-
-    if (!qrText) {
-      alert("Wklej tekst z QR kodu kuratora");
-      return;
-    }
-
-    // Parsuj QR data (format: JSON z systemPrompt, objects array)
-    try {
-      const data = JSON.parse(qrText);
-      this.state.curatorPrompt = data.systemPrompt || "";
-      this.state.steps = (data.objects || []).map((obj, idx) => ({
-        target: obj.title,
-        narration: obj.description || "",
-        fact: obj.fact || "",
-        author: obj.author || "",
-        year: obj.year || "",
-        index: idx
-      }));
-
-      console.log("✅ Museum data loaded from QR:", {
-        prompt: this.state.curatorPrompt ? "loaded" : "none",
-        objects: this.state.steps.length
-      });
-
-      this.state.screen = "session";
-      this.state.currentStepIndex = 0;
-      this.render();
-      await this.playFirstStep();
-    } catch (error) {
-      alert("Błąd w danych QR: " + error.message);
-      console.error("QR parse error:", error);
-    }
-  },
+  // ==================== EKRAN 1: POZNAJMY SIĘ ====================
 
   selectProfile(profileId) {
     this.state.profile = profileId;
@@ -148,40 +64,229 @@ window.app = {
     this.render();
   },
 
-  async startSession() {
+  async confirmPersonalization() {
+    const personalizationInput = document.getElementById("personalization");
     const apiKeyInput = document.getElementById("apiKey");
+    this.state.personalization = personalizationInput?.value?.trim() || "";
     const apiKey = apiKeyInput?.value;
 
-    if (!apiKey) {
-      alert("Podaj API key");
+    if (!this.state.profile || !this.state.provider) {
+      this.state.keyError = "Wybierz profil i dostawcę LLM.";
+      this.render();
       return;
     }
 
-    // Inicjalizuj LLM
+    if (!apiKey) {
+      this.state.keyError = "Podaj klucz API.";
+      this.render();
+      return;
+    }
+
     try {
       window.LLM.init(this.state.provider, apiKey);
     } catch (error) {
-      alert("Błąd inicjalizacji LLM: " + error.message);
+      this.state.keyError = "Błąd inicjalizacji LLM: " + error.message;
+      this.render();
       return;
     }
 
-    // Pomiń kalibrację — przejdź bezpośrednio do sesji
-    this.state.screen = "session";
+    this.state.keyError = "Sprawdzam klucz API...";
+    this.render();
+
+    const isKeyValid = await window.LLM.testKey();
+    if (!isKeyValid) {
+      this.state.keyError = "⚠️ Klucz API nieprawidłowy lub sieć niedostępna. Popraw klucz/providera i spróbuj ponownie.";
+      this.render();
+      return;
+    }
+    this.state.keyError = null;
+
+    // Nieblokujący zapis personalizacji — błąd (np. brak backendu na GH Pages) nie przerywa flow
+    if (this.state.personalization) {
+      fetch("/api/personalization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile: this.state.profile,
+          personalization: this.state.personalization
+        })
+      }).then((response) => {
+        if (!response.ok) console.warn("Zapis personalizacji nieudany:", response.status);
+      }).catch((error) => {
+        console.warn("Błąd zapisu personalizacji (nieblokujący):", error);
+      });
+    }
+
+    await this.tryUpdateLocation();
+
+    if (this.state.needsManualLocation) {
+      this.render();  // pokaż pole ręcznego miasta, zostań na ekranie 1
+      return;
+    }
+
+    this.state.screen = "mode-selector";
+    this.render();
+  },
+
+  // ---------- Lokalizacja: auto → ręczne miasto → geokodowanie → Praga ----------
+
+  tryUpdateLocation() {
+    if (!navigator.geolocation) {
+      this.state.needsManualLocation = true;
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      const timeoutId = setTimeout(() => {
+        console.warn("Geolokalizacja: timeout");
+        this.state.needsManualLocation = true;
+        resolve();
+      }, 8000);
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          clearTimeout(timeoutId);
+          this.state.location = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          this.state.needsManualLocation = false;
+          console.log("📍 Lokalizacja (auto):", this.state.location);
+          resolve();
+        },
+        (err) => {
+          clearTimeout(timeoutId);
+          console.warn("Geolokalizacja niedostępna:", err.message);
+          this.state.needsManualLocation = true;
+          resolve();
+        },
+        { timeout: 8000, maximumAge: 600000 }
+      );
+    });
+  },
+
+  async geocodeLocation() {
+    const cityInput = document.getElementById("manualCity");
+    const cityText = cityInput?.value?.trim();
+
+    if (!cityText) {
+      alert("Podaj nazwę miasta");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(cityText)
+      );
+      const data = await response.json();
+
+      if (data && data[0]) {
+        this.state.location = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+        console.log("📍 Lokalizacja (geokodowanie):", this.state.location, "dla:", cityText);
+      } else {
+        console.warn("Geokodowanie nie znalazło wyników dla:", cityText, "— używam Pragi jako domyślnej.");
+      }
+    } catch (error) {
+      console.warn("Błąd geokodowania:", error, "— używam Pragi jako domyślnej.");
+    }
+
+    this.state.needsManualLocation = false;
+    this.state.screen = "mode-selector";
+    this.render();
+  },
+
+  skipLocation() {
+    this.state.needsManualLocation = false;
+    this.state.screen = "mode-selector";
+    this.render();
+  },
+
+  haversineDistanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const toRad = (deg) => deg * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  },
+
+  // ==================== EKRAN 2: CO CHCESZ ROBIĆ? ====================
+
+  selectVersion(versionId) {
+    this.state.version = versionId;
+    this.render();
+  },
+
+  backToModeSelector() {
+    this.state.version = null;
+    this.state.screen = "mode-selector";
+    this.render();
+  },
+
+  backToPersonalization() {
+    this.state.screen = "personalization";
+    this.state.keyError = null;
+    this.render();
+  },
+
+  chooseAstronomy() {
+    this.state.version = "astronomy";
+    this.prepareSteps();
     this.state.currentStepIndex = 0;
+    this.state.screen = "session";
+    this.render();
+    this.startAstronomySession();
+  },
+
+  async startAstronomySession() {
+    await this.generateAstronomyNarration(0);
     this.render();
     await this.playFirstStep();
   },
 
+  // ==================== ASTRONOMIA ====================
+
   prepareSteps() {
-    if (this.state.version === "museum") {
-      // Museum mode — czekaj na wczytanie QR
-      this.state.steps = [];
-    } else {
-      // Astronomy mode — fallback steps
-      this.state.steps = window.FALLBACK_STEPS.map((step, idx) => ({
-        ...step,
-        index: idx
-      }));
+    // Surowe statyczne kroki — baza dla LLM (materiał źródłowy = target) oraz
+    // sieć bezpieczeństwa przy przejściowym błędzie LLM/sieci.
+    this.state.steps = window.FALLBACK_STEPS.map((step, idx) => ({
+      ...step,
+      index: idx
+    }));
+  },
+
+  computeAstronomyPosition(target, date, location) {
+    const reference = window.CATALOG.references.find(r => r.name === target);
+    if (!reference || !reference.stars.length) {
+      throw new Error(`Brak wpisu w CATALOG.references dla celu: ${target}`);
+    }
+
+    const starName = reference.stars[0];
+    const star = window.CATALOG.stars.find(s => s.name === starName);
+    if (!star) {
+      throw new Error(`Gwiazda nie znaleziona w katalogu: ${starName}`);
+    }
+
+    const altAz = window.ZenitAstronomy.getAltAz(star.ra, star.dec, location.lat, location.lon, date);
+    return { azimuth: altAz.azimuth, altitude: altAz.altitude };
+  },
+
+  async generateAstronomyNarration(stepIndex) {
+    const rawStep = this.state.steps[stepIndex];
+    try {
+      const pos = this.computeAstronomyPosition(rawStep.target, new Date(), this.state.location);
+      const context = {
+        profile: this.state.profile,
+        currentStep: stepIndex + 1,
+        totalSteps: this.state.steps.length,
+        object: { name: rawStep.target, azimuth: pos.azimuth, altitude: pos.altitude },
+        previousObjects: this.state.steps.slice(0, stepIndex).map(s => ({ name: s.target })),
+        personalization: this.state.personalization
+      };
+
+      const llmResponse = await window.LLM.generateStep(context);
+      this.state.steps[stepIndex] = { ...rawStep, narration: llmResponse.narration, fact: llmResponse.fact };
+    } catch (error) {
+      console.warn("Astronomia: LLM/obliczenia zawiodły, fallback na statyczny tekst:", error);
+      // rawStep (FALLBACK_STEPS) zostaje bez zmian — to jest sieć bezpieczeństwa
     }
   },
 
@@ -189,7 +294,6 @@ window.app = {
     const step = this.state.steps[0];
     if (!step) return;
 
-    // Odtwórz TTS
     try {
       await window.TTS.speak(step.narration, {
         onend: () => {
@@ -202,54 +306,138 @@ window.app = {
   },
 
   async nextStep() {
-    // Wygeneruj następny krok za pomocą LLM
     if (this.state.currentStepIndex >= this.state.steps.length - 1) {
-      // Koniec
       this.state.currentStepIndex = this.state.steps.length;
       this.render();
       return;
     }
 
-    this.state.currentStepIndex++;
+    const nextIndex = this.state.currentStepIndex + 1;
+    this.state.currentStepIndex = nextIndex;
 
-    // Pobierz lub wygeneruj krok
-    try {
-      let step;
-
-      if (this.state.version === "museum") {
-        // Museum mode — użyj pre-loaded descriptions z QR
-        step = this.state.steps[this.state.currentStepIndex];
-      } else {
-        // Astronomy mode — generuj z LLM
-        const context = {
-          profile: this.state.profile,
-          currentStep: this.state.currentStepIndex + 1,
-          totalSteps: this.state.steps.length,
-          object: this.state.steps[this.state.currentStepIndex],
-          previousObjects: this.state.steps.slice(0, this.state.currentStepIndex)
-        };
-
-        try {
-          const llmResponse = await window.LLM.generateStep(context);
-          step = {
-            ...this.state.steps[this.state.currentStepIndex],
-            narration: llmResponse.narration,
-            fact: llmResponse.fact
-          };
-        } catch (llmError) {
-          console.warn("LLM failed, using fallback:", llmError);
-          step = this.state.steps[this.state.currentStepIndex];
-        }
-      }
-
-      // Zaktualizuj krok
-      this.state.steps[this.state.currentStepIndex] = step;
+    if (this.state.version === "museum") {
+      this.state.museumError = null;
       this.render();
 
-      // Odtwórz TTS
-      await window.TTS.speak(step.narration);
+      try {
+        await this.generateMuseumNarration(nextIndex);
+        this.render();
+        await window.TTS.speak(this.state.steps[nextIndex].narration);
+      } catch (error) {
+        console.error("Museum LLM generation failed:", error);
+        this.state.museumError = "Nie udało się wygenerować opisu — sprawdź klucz API i spróbuj ponownie.";
+        this.render();
+      }
+    } else {
+      await this.generateAstronomyNarration(nextIndex);
+      this.render();
+
+      try {
+        await window.TTS.speak(this.state.steps[nextIndex].narration);
+      } catch (error) {
+        console.error("TTS Error:", error);
+      }
+    }
+  },
+
+  // ==================== MUZEUM ====================
+
+  async loadExhibit(exhibitName) {
+    try {
+      const response = await fetch(`docs/${exhibitName}.json`);
+      if (!response.ok) throw new Error("Exhibit not found");
+
+      const data = await response.json();
+      this._loadExhibitData(data, exhibitName);
     } catch (error) {
-      console.error("Error generating step:", error);
+      alert("Błąd wczytywania wystawy: " + error.message);
+      console.error("Exhibit load error:", error);
+    }
+  },
+
+  async loadMuseumQR() {
+    const qrInput = document.getElementById("curatorQR");
+    const qrText = qrInput?.value?.trim();
+
+    if (!qrText) {
+      alert("Wklej tekst z QR kodu kuratora");
+      return;
+    }
+
+    try {
+      const data = JSON.parse(qrText);
+      this._loadExhibitData(data, null);
+    } catch (error) {
+      alert("Błąd w danych QR: " + error.message);
+      console.error("QR parse error:", error);
+    }
+  },
+
+  async _loadExhibitData(data, exhibitName) {
+    this.state.curatorPrompt = data.systemPrompt || "";
+    // narration/fact zaczynają jako null — to LLM je wypełni z curatorDescription/curatorFact,
+    // dzięki czemu nigdy nie pokazujemy surowego tekstu kuratora wprost na ekranie.
+    this.state.steps = (data.objects || []).map((obj, idx) => ({
+      target: obj.title,
+      author: obj.author || "",
+      year: obj.year || "",
+      curatorDescription: obj.description || "",
+      curatorFact: obj.fact || "",
+      narration: null,
+      fact: null,
+      index: idx
+    }));
+    this.state.selectedExhibit = exhibitName;
+    this.state.museumError = null;
+
+    this.state.screen = "session";
+    this.state.currentStepIndex = 0;
+    this.render();
+
+    try {
+      await this.generateMuseumNarration(0);
+      this.render();
+      await this.playFirstStep();
+    } catch (error) {
+      console.error("Museum LLM generation failed:", error);
+      this.state.museumError = "Nie udało się wygenerować opisu — sprawdź klucz API i spróbuj ponownie.";
+      this.render();
+    }
+  },
+
+  async generateMuseumNarration(stepIndex) {
+    const raw = this.state.steps[stepIndex];
+    const context = {
+      profile: this.state.profile,
+      personalization: this.state.personalization,
+      currentStep: stepIndex + 1,
+      totalSteps: this.state.steps.length,
+      object: {
+        title: raw.target,
+        author: raw.author,
+        year: raw.year,
+        description: raw.curatorDescription,
+        fact: raw.curatorFact
+      },
+      previousObjects: this.state.steps.slice(0, stepIndex).map(s => ({ name: s.target }))
+    };
+
+    // Brak fallbacku — jeśli LLM zawiedzie, wywołujący musi obsłużyć błąd (patrz nextStep/_loadExhibitData/retryMuseumStep)
+    const result = await window.LLM.generateMuseumStep(context, this.state.curatorPrompt);
+    this.state.steps[stepIndex] = { ...raw, narration: result.narration, fact: result.fact };
+  },
+
+  async retryMuseumStep() {
+    this.state.museumError = null;
+    this.render();
+
+    try {
+      await this.generateMuseumNarration(this.state.currentStepIndex);
+      this.render();
+      await window.TTS.speak(this.state.steps[this.state.currentStepIndex].narration);
+    } catch (error) {
+      console.error("Retry failed:", error);
+      this.state.museumError = "Nadal nie udało się wygenerować opisu — spróbuj ponownie.";
       this.render();
     }
   }

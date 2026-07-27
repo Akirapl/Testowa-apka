@@ -1,21 +1,22 @@
 // Astronomy Engine wrapper — transformacja RA/Dec → Alt/Az
-window.Astronomy = {
-  // Przelicz RA/Dec na Alt/Az dla danej lokalizacji, daty i czasu
-  getAltAz(raHours, decDeg, latitude, longitude, date) {
-    // Konwertuj RA na degrees (15 degrees per hour)
-    const raDeg = raHours * 15;
+// Uwaga: zapamiętujemy referencję do CDN-owej biblioteki PRZED zdefiniowaniem
+// własnego globala — inaczej window.ZenitAstronomy nie mogłoby się nazywać
+// tak samo jak biblioteka, ale musimy uważać żeby jej nie nadpisać (tak jak
+// robił to poprzedni window.Astronomy = {...}, co samo siebie blokowało).
+const AstronomyEngine = window.Astronomy;
 
-    // Astronomy Engine wymaga Date obiektu
+window.ZenitAstronomy = {
+  // raDeg: rektascensja w STOPNIACH (tak jak trzyma je CATALOG.stars[].ra)
+  getAltAz(raDeg, decDeg, latitude, longitude, date) {
     if (!(date instanceof Date)) {
       date = new Date(date);
     }
 
-    // Astronomy Engine object
-    const observer = new Astronomy.Observer(latitude, longitude, 0);
-    const equatorial = new Astronomy.EquatorialCoordinates(date, raDeg, decDeg);
+    // Astronomy.Horizon oczekuje RA w godzinach syderycznych (0-24), nie stopniach
+    const raHours = raDeg / 15;
 
-    // Transformation RA/Dec → Alt/Az
-    const horizontal = Astronomy.Horizon(date, observer, raDeg, decDeg, 'normal');
+    const observer = new AstronomyEngine.Observer(latitude, longitude, 0);
+    const horizontal = AstronomyEngine.Horizon(date, observer, raHours, decDeg, 'normal');
 
     return {
       altitude: horizontal.altitude,  // degrees above horizon
@@ -24,8 +25,8 @@ window.Astronomy = {
   },
 
   // Testuj czy gwiazda jest widoczna (powyżej horyzontu)
-  isVisible(raHours, decDeg, latitude, longitude, date) {
-    const altAz = this.getAltAz(raHours, decDeg, latitude, longitude, date);
+  isVisible(raDeg, decDeg, latitude, longitude, date) {
+    const altAz = this.getAltAz(raDeg, decDeg, latitude, longitude, date);
     return altAz.altitude > 0;
   },
 

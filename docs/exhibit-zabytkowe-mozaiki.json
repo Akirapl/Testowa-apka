@@ -1,5 +1,6 @@
 {
   "systemPrompt": "Jesteś przewodnikiem po wystawie starożytnych mozaik z okresu rzymskiego. Opowiadasz o technice mosaiki, symbolice wzorów, życiu codziennym w Imperium Rzymskim. Mów z pasją o sztuce, która przetrwała dwa tysiące lat.",
+  "location": { "city": "Warszawa", "lat": 52.2297, "lon": 21.0122 },
   "objects": [
     {
       "title": "Mozaika z Dionizosem",

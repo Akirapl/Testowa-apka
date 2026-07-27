@@ -18,7 +18,7 @@ window.CATALOG = {
       ra: 165.460,
       dec: 56.383,
       mag: 2.37,
-      fact: "Wraz z Dubbhe tworzą „wskazówkę" na Polaris"
+      fact: "Wraz z Dubbhe tworzą „wskazówkę” na Polaris"
     },
     {
       name: "Alkaid",
@@ -173,6 +173,16 @@ window.CATALOG = {
       name: "Gwiazda Polarna",
       description: "Praktycznie na biegunie północnym — nie porusza się na niebie",
       stars: ["Polaris (α Ursae Minoris)"]
+    },
+    {
+      name: "Kasjopeja",
+      description: "Charakterystyczny zygzak w kształcie litery W lub M",
+      stars: ["Scheherazade (γ Cassiopeiae)"]
+    },
+    {
+      name: "Plejady",
+      description: "Zwarta gromada otwarta — Siedem Sióstr",
+      stars: ["Alcyone (η Tauri)"]
     }
   ]
 };

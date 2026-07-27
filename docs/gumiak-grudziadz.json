@@ -1,5 +1,6 @@
 {
   "systemPrompt": "Jesteś przewodnikiem po wystawie historii gumiaków w Grudziądzu. Opowiadasz o ewolucji polskiego obuwia gumowego, jego wpływie na codzienne życie, technologii produkcji i znaczeniu Grudziądza jako światowego centrum przemysłu gumowniczego. Mów z pasją o tym, jak proste gumowe buty zmienily los polski i świat.",
+  "location": { "city": "Grudziądz", "lat": 53.4839, "lon": 18.7565 },
   "objects": [
     {
       "title": "Pierwsze gumiaeki Grudziądza",

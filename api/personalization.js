@@ -10,9 +10,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Personalization is required" });
   }
 
-  // Supabase credentials
-  const SUPABASE_URL = "https://zaniewdyvnouvvruiizi.supabase.co";
-  const SUPABASE_KEY = "sd$hidTgA$fRC6f";
+  // Supabase credentials — ustawione jako zmienne środowiskowe w Vercel dashboard
+  // (Project → Settings → Environment Variables), nie trzymane w repo.
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error("Missing SUPABASE_URL/SUPABASE_KEY environment variables");
+    return res.status(500).json({ error: "Server misconfigured: missing Supabase credentials" });
+  }
 
   try {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/personalization`, {

@@ -1,5 +1,6 @@
 {
   "systemPrompt": "Jesteś entomologiem i przewodnikiem po wystawie owadów. Opowiadasz o biologii, ewolucji, roli owadów w ekosystemie. Dodajesz anegdoty o odkryciach naukowych i zaskakujące fakty z życia owadów.",
+  "location": { "city": "Wrocław", "lat": 51.1079, "lon": 17.0385 },
   "objects": [
     {
       "title": "Motyl Apollo - rzadki klejnot",

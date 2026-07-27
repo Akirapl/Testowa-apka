@@ -1,11 +1,12 @@
 {
   "systemPrompt": "Jesteś krytykiem sztuki i przewodnikiem po wystawie sztuki nowoczesnej. Opowiadasz o kontekście historycznym, ideach artystów, znaczeniu każdego dzieła. Mów o emocjach, które wzbudza sztuka.",
+  "location": { "city": "Łódź", "lat": 51.7592, "lon": 19.4560 },
   "objects": [
     {
       "title": "Loft VI - Mark Rothko",
       "author": "Mark Rothko",
       "year": "1960",
-      "description": "Gigantyczny obraz składający się z dwóch prostokątów koloru - górny ma głęboką marynarkę, dolny ma bardziej jasny błękit. Prosta композиция, ale niesamowita w osobistym doświadczeniu. Rothko specjalizował się w kolorowaniu emocji. Kiedy stoisz przed jego obrazem, czujesz smutek, refleksję, przytłoczenie. Kolor nie jest tylko kolorem - jest doświadczeniem egzystencjalnym.",
+      "description": "Gigantyczny obraz składający się z dwóch prostokątów koloru - górny ma głęboką marynarkę, dolny ma bardziej jasny błękit. Prosta kompozycja, ale niesamowita w osobistym doświadczeniu. Rothko specjalizował się w kolorowaniu emocji. Kiedy stoisz przed jego obrazem, czujesz smutek, refleksję, przytłoczenie. Kolor nie jest tylko kolorem - jest doświadczeniem egzystencjalnym.",
       "fact": "Rothko był perfekcionistą. Spędzał wiele lat nad jednym obrazem, mieszając kolory, badając jak światło wpływa na postrzeganie. Jego obrazy są tak duże, że gdy stoiszisz przed nimi, kolor cię otacza, pochłania."
     },
     {
