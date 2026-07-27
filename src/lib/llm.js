@@ -24,6 +24,33 @@ window.LLM = {
     }
   },
 
+  // Wspólny wywoływacz — woła własny /api/llm-proxy zamiast providera bezpośrednio.
+  // Server-to-server wywołanie proxy do providera nie podlega CORS (w przeciwieństwie
+  // do fetch() wprost z przeglądarki do api.anthropic.com/api.openai.com/api.mistral.ai,
+  // które w większości providerów jest przez nich samych blokowane).
+  async _callProxy(systemPrompt, userMessage) {
+    const response = await fetch("/api/llm-proxy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        provider: this.provider,
+        apiKey: this.apiKey,
+        model: this.model,
+        systemPrompt,
+        userMessage
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const detail = typeof data.error === "string" ? data.error : JSON.stringify(data.error);
+      throw new Error(`${this.provider} API error: ${response.status} ${detail}`);
+    }
+
+    return data.text;
+  },
+
   // Testuj czy klucz API jest prawidłowy
   async testKey() {
     if (!this.apiKey || !this.provider) {
@@ -32,60 +59,11 @@ window.LLM = {
     }
 
     try {
-      let response;
-      const testMessage = "Test";
-
-      switch (this.provider) {
-        case "claude":
-          response = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": this.apiKey,
-              "anthropic-version": "2023-06-01"
-            },
-            body: JSON.stringify({
-              model: this.model,
-              max_tokens: 10,
-              messages: [{ role: "user", content: testMessage }]
-            })
-          });
-          break;
-        case "openai":
-          response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${this.apiKey}`
-            },
-            body: JSON.stringify({
-              model: this.model,
-              max_tokens: 10,
-              messages: [{ role: "user", content: testMessage }]
-            })
-          });
-          break;
-        case "mistral":
-          response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${this.apiKey}`
-            },
-            body: JSON.stringify({
-              model: this.model,
-              max_tokens: 10,
-              messages: [{ role: "user", content: testMessage }]
-            })
-          });
-          break;
-      }
-
-      const isValid = response && response.ok;
-      console.log(`testKey: ${this.provider} key is ${isValid ? "✅ VALID" : "❌ INVALID"} (status: ${response?.status})`);
-      return isValid;
+      await this._callProxy("Jesteś asystentem testowym.", "Test");
+      console.log(`testKey: ${this.provider} key is ✅ VALID`);
+      return true;
     } catch (error) {
-      console.error("testKey error:", error);
+      console.warn(`testKey: ${this.provider} key is ❌ INVALID —`, error.message);
       return false;
     }
   },
@@ -121,85 +99,19 @@ window.LLM = {
     }
   },
 
-  // Claude API
+  // Claude API — przez /api/llm-proxy (patrz _callProxy)
   async callClaude(systemPrompt, userMessage) {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": this.apiKey,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: this.model,
-        max_tokens: 500,
-        system: systemPrompt,
-        messages: [
-          { role: "user", content: userMessage }
-        ]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.content[0].text;
+    return this._callProxy(systemPrompt, userMessage);
   },
 
-  // OpenAI API
+  // OpenAI API — przez /api/llm-proxy (patrz _callProxy)
   async callOpenAI(systemPrompt, userMessage) {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.apiKey}`
-      },
-      body: JSON.stringify({
-        model: this.model,
-        max_tokens: 500,
-        temperature: 0.8,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage }
-        ]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
+    return this._callProxy(systemPrompt, userMessage);
   },
 
-  // Mistral API
+  // Mistral API — przez /api/llm-proxy (patrz _callProxy)
   async callMistral(systemPrompt, userMessage) {
-    const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.apiKey}`
-      },
-      body: JSON.stringify({
-        model: this.model,
-        max_tokens: 500,
-        temperature: 0.8,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage }
-        ]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Mistral API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
+    return this._callProxy(systemPrompt, userMessage);
   },
 
   // Buduj prompt dla LLM
