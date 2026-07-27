@@ -14,12 +14,23 @@ window.app = {
     location: { lat: 50.05, lon: 14.47 },  // Praga — ostateczny fallback
     needsManualLocation: false,
     keyError: null,
-    museumError: null
+    museumError: null,
+    debugLog: []
   },
 
   init() {
     this.render();
     this.setupEventListeners();
+  },
+
+  // Diagnostyka widoczna na ekranie (bez potrzeby DevTools) — patrz renderDebugPanel w components.js
+  log(message) {
+    console.log(message);
+    this.state.debugLog.push(`[${new Date().toLocaleTimeString()}] ${message}`);
+    if (this.state.debugLog.length > 40) {
+      this.state.debugLog = this.state.debugLog.slice(-40);
+    }
+    this.render();
   },
 
   render() {
@@ -84,8 +95,10 @@ window.app = {
 
     try {
       window.LLM.init(this.state.provider, apiKey);
+      this.log(`LLM.init: provider=${this.state.provider} model=${window.LLM.model}`);
     } catch (error) {
       this.state.keyError = "Błąd inicjalizacji LLM: " + error.message;
+      this.log(`LLM.init FAILED: ${error.message}`);
       this.render();
       return;
     }
@@ -93,12 +106,15 @@ window.app = {
     this.state.keyError = "Sprawdzam klucz API...";
     this.render();
 
+    this.log("testKey: wysyłam zapytanie do /api/llm-proxy...");
     const isKeyValid = await window.LLM.testKey();
     if (!isKeyValid) {
       this.state.keyError = "⚠️ Klucz API nieprawidłowy lub sieć niedostępna. Popraw klucz/providera i spróbuj ponownie.";
+      this.log(`testKey: NIEUDANY — ${window.LLM.lastError || "brak szczegółów błędu"}`);
       this.render();
       return;
     }
+    this.log("testKey: ✅ sukces, klucz działa");
     this.state.keyError = null;
 
     // Nieblokujący zapis personalizacji — błąd (np. brak backendu na GH Pages) nie przerywa flow
@@ -138,7 +154,7 @@ window.app = {
 
     return new Promise((resolve) => {
       const timeoutId = setTimeout(() => {
-        console.warn("Geolokalizacja: timeout");
+        this.log("Geolokalizacja: timeout (8s)");
         this.state.needsManualLocation = true;
         resolve();
       }, 8000);
@@ -148,12 +164,12 @@ window.app = {
           clearTimeout(timeoutId);
           this.state.location = { lat: pos.coords.latitude, lon: pos.coords.longitude };
           this.state.needsManualLocation = false;
-          console.log("📍 Lokalizacja (auto):", this.state.location);
+          this.log(`Lokalizacja (auto): lat=${this.state.location.lat.toFixed(3)} lon=${this.state.location.lon.toFixed(3)}`);
           resolve();
         },
         (err) => {
           clearTimeout(timeoutId);
-          console.warn("Geolokalizacja niedostępna:", err.message);
+          this.log(`Geolokalizacja niedostępna: ${err.message}`);
           this.state.needsManualLocation = true;
           resolve();
         },
@@ -179,12 +195,12 @@ window.app = {
 
       if (data && data[0]) {
         this.state.location = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-        console.log("📍 Lokalizacja (geokodowanie):", this.state.location, "dla:", cityText);
+        this.log(`Lokalizacja (geokodowanie "${cityText}"): lat=${this.state.location.lat.toFixed(3)} lon=${this.state.location.lon.toFixed(3)}`);
       } else {
-        console.warn("Geokodowanie nie znalazło wyników dla:", cityText, "— używam Pragi jako domyślnej.");
+        this.log(`Geokodowanie: brak wyników dla "${cityText}" — używam Pragi jako domyślnej.`);
       }
     } catch (error) {
-      console.warn("Błąd geokodowania:", error, "— używam Pragi jako domyślnej.");
+      this.log(`Błąd geokodowania: ${error.message} — używam Pragi jako domyślnej.`);
     }
 
     this.state.needsManualLocation = false;
@@ -232,6 +248,7 @@ window.app = {
     this.prepareSteps();
     this.state.currentStepIndex = 0;
     this.state.screen = "session";
+    this.log("Wybrano NIEBO — start sesji astronomii");
     this.render();
     this.startAstronomySession();
   },
@@ -273,6 +290,8 @@ window.app = {
     const rawStep = this.state.steps[stepIndex];
     try {
       const pos = this.computeAstronomyPosition(rawStep.target, new Date(), this.state.location);
+      this.log(`Astro krok ${stepIndex} (${rawStep.target}): pozycja OK — az=${pos.azimuth.toFixed(1)} alt=${pos.altitude.toFixed(1)}`);
+
       const context = {
         profile: this.state.profile,
         currentStep: stepIndex + 1,
@@ -284,8 +303,9 @@ window.app = {
 
       const llmResponse = await window.LLM.generateStep(context);
       this.state.steps[stepIndex] = { ...rawStep, narration: llmResponse.narration, fact: llmResponse.fact };
+      this.log(`Astro krok ${stepIndex}: LLM ✅ sukces (${llmResponse.narration.length} znaków)`);
     } catch (error) {
-      console.warn("Astronomia: LLM/obliczenia zawiodły, fallback na statyczny tekst:", error);
+      this.log(`Astro krok ${stepIndex}: ❌ FALLBACK — ${error.message || error}`);
       // rawStep (FALLBACK_STEPS) zostaje bez zmian — to jest sieć bezpieczeństwa
     }
   },
@@ -314,6 +334,7 @@ window.app = {
 
     const nextIndex = this.state.currentStepIndex + 1;
     this.state.currentStepIndex = nextIndex;
+    this.log(`nextStep: tryb=${this.state.version} krok=${nextIndex}`);
 
     if (this.state.version === "museum") {
       this.state.museumError = null;
@@ -324,7 +345,7 @@ window.app = {
         this.render();
         await window.TTS.speak(this.state.steps[nextIndex].narration);
       } catch (error) {
-        console.error("Museum LLM generation failed:", error);
+        this.log(`Muzeum krok ${nextIndex}: ❌ błąd — ${error.message || error}`);
         this.state.museumError = "Nie udało się wygenerować opisu — sprawdź klucz API i spróbuj ponownie.";
         this.render();
       }
@@ -392,6 +413,7 @@ window.app = {
 
     this.state.screen = "session";
     this.state.currentStepIndex = 0;
+    this.log(`Wystawa wczytana: ${exhibitName || "(wklejony QR)"} — ${this.state.steps.length} eksponatów`);
     this.render();
 
     try {
@@ -399,7 +421,7 @@ window.app = {
       this.render();
       await this.playFirstStep();
     } catch (error) {
-      console.error("Museum LLM generation failed:", error);
+      this.log(`Muzeum krok 0: ❌ błąd — ${error.message || error}`);
       this.state.museumError = "Nie udało się wygenerować opisu — sprawdź klucz API i spróbuj ponownie.";
       this.render();
     }
@@ -425,6 +447,7 @@ window.app = {
     // Brak fallbacku — jeśli LLM zawiedzie, wywołujący musi obsłużyć błąd (patrz nextStep/_loadExhibitData/retryMuseumStep)
     const result = await window.LLM.generateMuseumStep(context, this.state.curatorPrompt);
     this.state.steps[stepIndex] = { ...raw, narration: result.narration, fact: result.fact };
+    this.log(`Muzeum krok ${stepIndex} (${raw.target}): LLM ✅ sukces (${result.narration.length} znaków)`);
   },
 
   async retryMuseumStep() {
@@ -436,7 +459,7 @@ window.app = {
       this.render();
       await window.TTS.speak(this.state.steps[this.state.currentStepIndex].narration);
     } catch (error) {
-      console.error("Retry failed:", error);
+      this.log(`Muzeum retry krok ${this.state.currentStepIndex}: ❌ nadal błąd — ${error.message || error}`);
       this.state.museumError = "Nadal nie udało się wygenerować opisu — spróbuj ponownie.";
       this.render();
     }

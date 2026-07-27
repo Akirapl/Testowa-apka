@@ -1,6 +1,18 @@
 // UI Components
 
 window.Components = {
+  // Panel diagnostyczny — pełny przebieg w plain tekście, widoczny na ekranie
+  // (bez potrzeby DevTools, np. na telefonie). Doklejany na dole każdego ekranu.
+  renderDebugPanel(state) {
+    const log = (state.debugLog && state.debugLog.length) ? state.debugLog.join('\n') : '(pusto)';
+    return `
+      <details style="margin-top: 1rem; font-size: 0.65rem; color: var(--parchment-dim);">
+        <summary style="cursor: pointer;">Diagnostyka (dotknij żeby rozwinąć)</summary>
+        <pre style="white-space: pre-wrap; word-break: break-word; margin-top: 0.5rem; font-family: monospace; font-size: 0.65rem; color: var(--parchment-dim);">${log}</pre>
+      </details>
+    `;
+  },
+
   // Ekran 1 — "Poznajmy się": personalizacja + profil + LLM + klucz (+ lokalizacja gdy trzeba)
   renderPersonalization(state) {
     const profiles = [
@@ -113,6 +125,8 @@ window.Components = {
             Dalej →
           </button>
         ` : ''}
+
+        ${this.renderDebugPanel(state)}
       </div>
     `;
   },
@@ -144,6 +158,8 @@ window.Components = {
           <button class="button" style="width: 100%;" onclick="window.app.backToPersonalization()">
             ← Wróć
           </button>
+
+          ${this.renderDebugPanel(state)}
         </div>
       `;
     }
@@ -204,6 +220,8 @@ window.Components = {
         <button class="button" style="margin-top: 0.5rem; width: 100%;" onclick="window.app.backToModeSelector()">
           ← Wróć
         </button>
+
+        ${this.renderDebugPanel(state)}
       </div>
     `;
   },
@@ -224,6 +242,7 @@ window.Components = {
             <button class="button-bottom" onclick="window.app.retryMuseumStep()">
               Spróbuj ponownie
             </button>
+            ${this.renderDebugPanel(state)}
           </div>
         `;
       }
@@ -260,6 +279,8 @@ window.Components = {
             onclick="window.app.nextStep()">
             ${isLastStep ? 'Koniec wystawy' : (state.currentStepIndex === 0 ? 'Zaczynam → dalej' : 'Dalej')}
           </button>
+
+          ${this.renderDebugPanel(state)}
         </div>
       `;
     }
@@ -296,6 +317,8 @@ window.Components = {
           onclick="window.app.nextStep()">
           ${isLastStep ? 'Sesja zakończona' : (state.currentStepIndex === 0 ? 'Znalazłem → dalej' : 'Dalej')}
         </button>
+
+        ${this.renderDebugPanel(state)}
       </div>
     `;
   }

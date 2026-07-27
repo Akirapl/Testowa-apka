@@ -52,8 +52,13 @@ window.LLM = {
   },
 
   // Testuj czy klucz API jest prawidłowy
+  lastError: null,
+
   async testKey() {
+    this.lastError = null;
+
     if (!this.apiKey || !this.provider) {
+      this.lastError = "Brak klucza API lub providera";
       console.warn("testKey: no apiKey or provider set");
       return false;
     }
@@ -63,6 +68,7 @@ window.LLM = {
       console.log(`testKey: ${this.provider} key is ✅ VALID`);
       return true;
     } catch (error) {
+      this.lastError = error.message;
       console.warn(`testKey: ${this.provider} key is ❌ INVALID —`, error.message);
       return false;
     }
