@@ -17,7 +17,10 @@ window.app = {
     museumError: null,
     debugLog: [],
     isGenerating: false,
-    apiKey: ""
+    apiKey: "",
+    ttsProvider: "browser",
+    ttsApiKey: "",
+    ttsKeyError: null
   },
 
   init() {
@@ -73,8 +76,10 @@ window.app = {
   syncPersonalizationInputs() {
     const personalizationInput = document.getElementById("personalization");
     const apiKeyInput = document.getElementById("apiKey");
+    const ttsApiKeyInput = document.getElementById("ttsApiKey");
     if (personalizationInput) this.state.personalization = personalizationInput.value;
     if (apiKeyInput) this.state.apiKey = apiKeyInput.value;
+    if (ttsApiKeyInput) this.state.ttsApiKey = ttsApiKeyInput.value;
   },
 
   selectProfile(profileId) {
@@ -86,6 +91,13 @@ window.app = {
   selectProvider(providerId) {
     this.syncPersonalizationInputs();
     this.state.provider = providerId;
+    this.render();
+  },
+
+  selectTtsProvider(providerId) {
+    this.syncPersonalizationInputs();
+    this.state.ttsProvider = providerId;
+    this.state.ttsKeyError = null;
     this.render();
   },
 
@@ -129,6 +141,40 @@ window.app = {
     }
     this.log("testKey: ✅ sukces, klucz działa");
     this.state.keyError = null;
+
+    // Inicjalizacja TTS — "browser" (domyślny) nie wymaga klucza ani testu
+    const ttsProvider = this.state.ttsProvider || "browser";
+    try {
+      window.TTS.init(ttsProvider, this.state.ttsApiKey);
+      this.log(`TTS.init: provider=${ttsProvider}`);
+    } catch (error) {
+      this.state.ttsKeyError = "Błąd inicjalizacji TTS: " + error.message;
+      this.log(`TTS.init FAILED: ${error.message}`);
+      this.render();
+      return;
+    }
+
+    if (ttsProvider !== "browser") {
+      if (!this.state.ttsApiKey) {
+        this.state.ttsKeyError = "Podaj klucz API dla wybranego dostawcy głosu (TTS).";
+        this.render();
+        return;
+      }
+
+      this.state.ttsKeyError = "Sprawdzam klucz API TTS...";
+      this.render();
+
+      this.log("TTS testKey: wysyłam zapytanie do /api/tts-proxy...");
+      const isTtsKeyValid = await window.TTS.testKey();
+      if (!isTtsKeyValid) {
+        this.state.ttsKeyError = "⚠️ Klucz API TTS nieprawidłowy lub sieć niedostępna. Popraw klucz/dostawcę głosu i spróbuj ponownie.";
+        this.log(`TTS testKey: NIEUDANY — ${window.TTS.lastError || "brak szczegółów błędu"}`);
+        this.render();
+        return;
+      }
+      this.log("TTS testKey: ✅ sukces, klucz działa");
+    }
+    this.state.ttsKeyError = null;
 
     // Nieblokujący zapis personalizacji — błąd (np. brak backendu na GH Pages) nie przerywa flow
     if (this.state.personalization) {
@@ -253,6 +299,7 @@ window.app = {
   backToPersonalization() {
     this.state.screen = "personalization";
     this.state.keyError = null;
+    this.state.ttsKeyError = null;
     this.render();
   },
 
