@@ -3,7 +3,7 @@
 // Podbijaj przy każdej zmianie dotyczącej TTS/debugowania — loguje się jako
 // pierwszy wpis w panelu diagnostyki, żeby od razu było widać czy telefon
 // faktycznie załadował najnowszy deployment (bez zgadywania po Vercel dashboardzie).
-const APP_VERSION = "v9 — gwarantowany fallback: przycisk ▶ Odtwórz gdy przeglądarka blokuje autoplay";
+const APP_VERSION = "v10 — auto-retry (3x) na 'Load failed' w TTS i LLM proxy (słaby zasięg pod niebem)";
 
 window.app = {
   state: {

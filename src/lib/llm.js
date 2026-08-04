@@ -28,27 +28,42 @@ window.LLM = {
   // Server-to-server wywołanie proxy do providera nie podlega CORS (w przeciwieństwie
   // do fetch() wprost z przeglądarki do api.anthropic.com/api.openai.com/api.mistral.ai,
   // które w większości providerów jest przez nich samych blokowane).
-  async _callProxy(systemPrompt, userMessage) {
-    const response = await fetch("/api/llm-proxy", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider: this.provider,
-        apiKey: this.apiKey,
-        model: this.model,
-        systemPrompt,
-        userMessage
-      })
-    });
+  //
+  // Apka jest do użytku pod gołym niebem, gdzie zasięg bywa słaby — "Load failed"
+  // (błąd sieciowy fetch(), nie odpowiedź serwera) bywa przejściowym zonkiem
+  // połączenia, więc próbujemy ponownie zamiast od razu poddawać się.
+  async _callProxy(systemPrompt, userMessage, attempt = 1) {
+    const maxAttempts = 3;
 
-    const data = await response.json();
+    try {
+      const response = await fetch("/api/llm-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: this.provider,
+          apiKey: this.apiKey,
+          model: this.model,
+          systemPrompt,
+          userMessage
+        })
+      });
 
-    if (!response.ok) {
-      const detail = typeof data.error === "string" ? data.error : JSON.stringify(data.error);
-      throw new Error(`${this.provider} API error: ${response.status} ${detail}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        const detail = typeof data.error === "string" ? data.error : JSON.stringify(data.error);
+        throw new Error(`${this.provider} API error: ${response.status} ${detail}`);
+      }
+
+      return data.text;
+    } catch (error) {
+      if (attempt < maxAttempts) {
+        console.warn(`_callProxy: próba ${attempt}/${maxAttempts} nieudana (${error.message}), ponawiam...`);
+        await new Promise((resolve) => setTimeout(resolve, 600 * attempt));
+        return this._callProxy(systemPrompt, userMessage, attempt + 1);
+      }
+      throw error;
     }
-
-    return data.text;
   },
 
   // Testuj czy klucz API jest prawidłowy

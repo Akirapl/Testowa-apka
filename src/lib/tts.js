@@ -102,29 +102,43 @@ window.TTS = {
     }
   },
 
-  // Wspólny wywoływacz proxy — zwraca audio jako data URL (base64)
-  async _synthesizeViaProxy(text) {
-    const response = await fetch("/api/tts-proxy", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider: this.provider,
-        apiKey: this.apiKey,
-        model: this.model,
-        voice: this.voice,
-        languageCode: this.languageCode,
-        text
-      })
-    });
+  // Wspólny wywoływacz proxy — zwraca audio jako data URL (base64). Apka jest do
+  // użytku pod gołym niebem, gdzie zasięg bywa słaby — "Load failed" (błąd sieciowy
+  // fetch(), nie odpowiedź serwera) bywa przejściowym zonkiem połączenia, więc
+  // próbujemy ponownie zamiast od razu poddawać się i spadać na głos przeglądarki.
+  async _synthesizeViaProxy(text, attempt = 1) {
+    const maxAttempts = 3;
 
-    const data = await response.json();
+    try {
+      const response = await fetch("/api/tts-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: this.provider,
+          apiKey: this.apiKey,
+          model: this.model,
+          voice: this.voice,
+          languageCode: this.languageCode,
+          text
+        })
+      });
 
-    if (!response.ok) {
-      const detail = typeof data.error === "string" ? data.error : JSON.stringify(data.error);
-      throw new Error(`${this.provider} TTS API error: ${response.status} ${detail}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        const detail = typeof data.error === "string" ? data.error : JSON.stringify(data.error);
+        throw new Error(`${this.provider} TTS API error: ${response.status} ${detail}`);
+      }
+
+      return data.audio;
+    } catch (error) {
+      if (attempt < maxAttempts) {
+        console.warn(`_synthesizeViaProxy: próba ${attempt}/${maxAttempts} nieudana (${error.message}), ponawiam...`);
+        await new Promise((resolve) => setTimeout(resolve, 600 * attempt));
+        return this._synthesizeViaProxy(text, attempt + 1);
+      }
+      throw error;
     }
-
-    return data.audio;
   },
 
   // Główne wejście — syntetyzuj i odtwórz. Przy błędzie dostawcy zewnętrznego,
