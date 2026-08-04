@@ -13,6 +13,23 @@ window.Components = {
     `;
   },
 
+  // Kontrolki playera (powtórz/pauza-wznów/stop) — apka jest głównie głosowa,
+  // więc te przyciski są jedynym sposobem sterowania odtwarzaniem poza czekaniem.
+  renderPlayerControls(state) {
+    const step = state.steps[state.currentStepIndex];
+    const disabled = !step || !step.narration;
+    const pauseIcon = state.audioPaused ? '▶' : '⏸';
+    const pauseLabel = state.audioPaused ? 'Wznów' : 'Pauza';
+
+    return `
+      <div class="player-controls">
+        <button class="player-btn" title="Powtórz" ${disabled ? 'disabled' : ''} onclick="window.app.repeatStep()">🔁</button>
+        <button class="player-btn" title="${pauseLabel}" ${disabled ? 'disabled' : ''} onclick="window.app.togglePause()">${pauseIcon}</button>
+        <button class="player-btn" title="Stop" ${disabled ? 'disabled' : ''} onclick="window.app.stopAudio()">⏹</button>
+      </div>
+    `;
+  },
+
   // Ekran 1 — "Poznajmy się": personalizacja + profil + LLM + klucz (+ lokalizacja gdy trzeba)
   renderPersonalization(state) {
     const profiles = [
@@ -307,6 +324,8 @@ window.Components = {
             `}
           </div>
 
+          ${!isLastStep ? this.renderPlayerControls(state) : ''}
+
           <button class="button-bottom"
             ${isLastStep || state.isGenerating ? 'disabled' : ''}
             onclick="window.app.nextStep()">
@@ -344,6 +363,8 @@ window.Components = {
             </p>
           `}
         </div>
+
+        ${!isLastStep ? this.renderPlayerControls(state) : ''}
 
         <button class="button-bottom"
           ${isLastStep || state.isGenerating ? 'disabled' : ''}

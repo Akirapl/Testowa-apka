@@ -3,7 +3,7 @@
 // Podbijaj przy każdej zmianie dotyczącej TTS/debugowania — loguje się jako
 // pierwszy wpis w panelu diagnostyki, żeby od razu było widać czy telefon
 // faktycznie załadował najnowszy deployment (bez zgadywania po Vercel dashboardzie).
-const APP_VERSION = "v6 — silent-wav-unlock, surfaced-fallback-errors";
+const APP_VERSION = "v7 — player controls (powtórz/pauza/stop), TTS czyta narrację+ciekawostkę";
 
 window.app = {
   state: {
@@ -25,7 +25,8 @@ window.app = {
     apiKey: "",
     ttsProvider: "browser",
     ttsApiKey: "",
-    ttsKeyError: null
+    ttsKeyError: null,
+    audioPaused: false
   },
 
   init() {
@@ -416,20 +417,52 @@ window.app = {
     }
   },
 
-  async playFirstStep() {
-    const step = this.state.steps[0];
-    if (!step) return;
+  // To apka głosowa — TTS ma czytać wszystko co jest na ekranie, nie tylko
+  // narrację, ale i ciekawostkę (step.fact), bo obie części niosą treść.
+  buildSpokenText(step) {
+    return [step.narration, step.fact].filter(Boolean).join(" ");
+  },
 
+  async speakStep(step) {
+    if (!step) return;
+    const text = this.buildSpokenText(step);
+    if (!text) return;
+
+    this.state.audioPaused = false;
     try {
-      await window.TTS.speak(step.narration, {
-        onend: () => {
-          // Kiedy skończy się mowa, czekaj na użytkownika
-        },
+      await window.TTS.speak(text, {
         onerror: (err) => this.log(`TTS (${window.TTS.provider}): ❌ odtwarzanie nieudane — ${err}`)
       });
     } catch (error) {
       this.log(`TTS Error: ${error.message || error}`);
     }
+  },
+
+  async playFirstStep() {
+    await this.speakStep(this.state.steps[0]);
+  },
+
+  // ---------- Sterowanie playerem (powtórz / pauza-wznów / stop) ----------
+
+  repeatStep() {
+    this.speakStep(this.state.steps[this.state.currentStepIndex]);
+  },
+
+  togglePause() {
+    if (this.state.audioPaused) {
+      window.TTS.resume();
+      this.state.audioPaused = false;
+    } else {
+      window.TTS.pause();
+      this.state.audioPaused = true;
+    }
+    this.render();
+  },
+
+  stopAudio() {
+    window.TTS.cancel();
+    this.state.audioPaused = false;
+    this.render();
   },
 
   async nextStep() {
@@ -459,9 +492,7 @@ window.app = {
         try {
           await this.generateMuseumNarration(nextIndex);
           this.render();
-          await window.TTS.speak(this.state.steps[nextIndex].narration, {
-            onerror: (err) => this.log(`TTS (${window.TTS.provider}): ❌ odtwarzanie nieudane — ${err}`)
-          });
+          await this.speakStep(this.state.steps[nextIndex]);
         } catch (error) {
           this.log(`Muzeum krok ${nextIndex}: ❌ błąd — ${error.message || error}`);
           this.state.museumError = "Nie udało się wygenerować opisu — sprawdź klucz API i spróbuj ponownie.";
@@ -470,14 +501,7 @@ window.app = {
       } else {
         await this.generateAstronomyNarration(nextIndex);
         this.render();
-
-        try {
-          await window.TTS.speak(this.state.steps[nextIndex].narration, {
-            onerror: (err) => this.log(`TTS (${window.TTS.provider}): ❌ odtwarzanie nieudane — ${err}`)
-          });
-        } catch (error) {
-          this.log(`TTS Error: ${error.message || error}`);
-        }
+        await this.speakStep(this.state.steps[nextIndex]);
       }
     } finally {
       this.state.isGenerating = false;
@@ -581,9 +605,7 @@ window.app = {
     try {
       await this.generateMuseumNarration(this.state.currentStepIndex);
       this.render();
-      await window.TTS.speak(this.state.steps[this.state.currentStepIndex].narration, {
-        onerror: (err) => this.log(`TTS (${window.TTS.provider}): ❌ odtwarzanie nieudane — ${err}`)
-      });
+      await this.speakStep(this.state.steps[this.state.currentStepIndex]);
     } catch (error) {
       this.log(`Muzeum retry krok ${this.state.currentStepIndex}: ❌ nadal błąd — ${error.message || error}`);
       this.state.museumError = "Nadal nie udało się wygenerować opisu — spróbuj ponownie.";
