@@ -177,10 +177,29 @@ window.TTS = {
       audio.play().catch((error) => {
         this.isPlaying = false;
         console.error("TTS audio play() rejected:", error);
-        if (options.onerror) options.onerror(error.message);
+        // audio zostaje załadowane w this.currentAudio — jeśli to blokada autoplay
+        // przeglądarki (a nie prawdziwy błąd), wywołujący może spróbować ponownie
+        // SYNCHRONICZNIE w reakcji na świeży tap użytkownika (retryBlockedPlayback),
+        // co ominie blokadę bez potrzeby zgadywania timingu "unlock".
+        const reason = error && error.name === "NotAllowedError" ? "autoplay_blocked" : (error.message || String(error));
+        if (options.onerror) options.onerror(reason);
         resolve();
       });
     });
+  },
+
+  // Ręczne wznowienie odtwarzania zablokowanego przez politykę autoplay — MUSI być
+  // wywołane synchronicznie z poziomu handlera kliknięcia/tapu (np. przycisku "▶"
+  // w UI), inaczej przeglądarka odrzuci je z tego samego powodu co pierwszą próbę.
+  retryBlockedPlayback(options = {}) {
+    if (!this.currentAudio) return false;
+
+    this.currentAudio.play().catch((error) => {
+      this.isPlaying = false;
+      console.error("TTS retryBlockedPlayback: nadal odrzucone:", error);
+      if (options.onerror) options.onerror(error.message || String(error));
+    });
+    return true;
   },
 
   // Web Speech API — domyślny, darmowy fallback (dotychczasowe zachowanie)

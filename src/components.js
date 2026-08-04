@@ -18,6 +18,21 @@ window.Components = {
   renderPlayerControls(state) {
     const step = state.steps[state.currentStepIndex];
     const disabled = !step || !step.narration;
+
+    // Przeglądarka zablokowała automatyczne odtwarzanie (typowe na iOS) — audio
+    // jest gotowe, czeka tylko na świeży tap. Duży, jednoznaczny przycisk zamiast
+    // cichej porażki.
+    if (state.audioBlocked) {
+      return `
+        <div class="player-controls">
+          <button class="player-btn player-btn-play" title="Odtwórz" onclick="window.app.manualPlayBlocked()">▶</button>
+        </div>
+        <p style="text-align: center; font-size: 0.75rem; color: var(--gold); margin-top: 0.5rem;">
+          Przeglądarka zablokowała automatyczne odtwarzanie — dotknij ▶
+        </p>
+      `;
+    }
+
     const pauseIcon = state.audioPaused ? '▶' : '⏸';
     const pauseLabel = state.audioPaused ? 'Wznów' : 'Pauza';
 

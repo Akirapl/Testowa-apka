@@ -3,7 +3,7 @@
 // Podbijaj przy każdej zmianie dotyczącej TTS/debugowania — loguje się jako
 // pierwszy wpis w panelu diagnostyki, żeby od razu było widać czy telefon
 // faktycznie załadował najnowszy deployment (bez zgadywania po Vercel dashboardzie).
-const APP_VERSION = "v8 — unlock audio retry na każdym dotknięciu (potwierdzony sukces zamiast zgadywania)";
+const APP_VERSION = "v9 — gwarantowany fallback: przycisk ▶ Odtwórz gdy przeglądarka blokuje autoplay";
 
 window.app = {
   state: {
@@ -26,7 +26,8 @@ window.app = {
     ttsProvider: "browser",
     ttsApiKey: "",
     ttsKeyError: null,
-    audioPaused: false
+    audioPaused: false,
+    audioBlocked: false
   },
 
   init() {
@@ -435,9 +436,20 @@ window.app = {
     if (!text) return;
 
     this.state.audioPaused = false;
+    this.state.audioBlocked = false;
     try {
       await window.TTS.speak(text, {
-        onerror: (err) => this.log(`TTS (${window.TTS.provider}): ❌ odtwarzanie nieudane — ${err}`)
+        onerror: (err) => {
+          if (err === "autoplay_blocked") {
+            // Nie prawdziwy błąd — audio jest gotowe, przeglądarka tylko wymaga
+            // świeżego tapu użytkownika. Pokaż duży przycisk ▶ zamiast cichej porażki.
+            this.state.audioBlocked = true;
+            this.log(`TTS (${window.TTS.provider}): przeglądarka zablokowała autoplay — dotknij ▶ żeby odtworzyć`);
+          } else {
+            this.log(`TTS (${window.TTS.provider}): ❌ odtwarzanie nieudane — ${err}`);
+          }
+          this.render();
+        }
       });
     } catch (error) {
       this.log(`TTS Error: ${error.message || error}`);
@@ -448,7 +460,7 @@ window.app = {
     await this.speakStep(this.state.steps[0]);
   },
 
-  // ---------- Sterowanie playerem (powtórz / pauza-wznów / stop) ----------
+  // ---------- Sterowanie playerem (powtórz / pauza-wznów / stop / ręczne odtwórz) ----------
 
   repeatStep() {
     this.speakStep(this.state.steps[this.state.currentStepIndex]);
@@ -468,6 +480,21 @@ window.app = {
   stopAudio() {
     window.TTS.cancel();
     this.state.audioPaused = false;
+    this.state.audioBlocked = false;
+    this.render();
+  },
+
+  // Wywoływane bezpośrednio z onclick przycisku ▶ — MUSI zostać w tym samym,
+  // synchronicznym wywołaniu co tap, żeby przeglądarka zaakceptowała play().
+  manualPlayBlocked() {
+    this.state.audioBlocked = false;
+    window.TTS.retryBlockedPlayback({
+      onerror: (err) => {
+        this.state.audioBlocked = true;
+        this.log(`TTS (${window.TTS.provider}): ręczne odtworzenie też nieudane — ${err}`);
+        this.render();
+      }
+    });
     this.render();
   },
 
