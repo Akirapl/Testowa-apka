@@ -24,8 +24,39 @@ window.app = {
   },
 
   init() {
+    this.loadSavedKeys();
     this.render();
     this.setupEventListeners();
+  },
+
+  // Klucze API zapamiętane lokalnie na tym urządzeniu (localStorage) — nigdy
+  // nie trafiają do kodu/gita, tylko zostają w przeglądarce użytkownika, żeby
+  // nie trzeba było wpisywać ich ponownie przy każdym odświeżeniu.
+  loadSavedKeys() {
+    try {
+      const provider = localStorage.getItem("zenit_llm_provider");
+      const apiKey = localStorage.getItem("zenit_llm_apiKey");
+      const ttsProvider = localStorage.getItem("zenit_tts_provider");
+      const ttsApiKey = localStorage.getItem("zenit_tts_apiKey");
+
+      if (provider) this.state.provider = provider;
+      if (apiKey) this.state.apiKey = apiKey;
+      if (ttsProvider) this.state.ttsProvider = ttsProvider;
+      if (ttsApiKey) this.state.ttsApiKey = ttsApiKey;
+    } catch (error) {
+      console.warn("loadSavedKeys: localStorage niedostępny:", error);
+    }
+  },
+
+  saveKeys() {
+    try {
+      localStorage.setItem("zenit_llm_provider", this.state.provider || "");
+      localStorage.setItem("zenit_llm_apiKey", this.state.apiKey || "");
+      localStorage.setItem("zenit_tts_provider", this.state.ttsProvider || "browser");
+      localStorage.setItem("zenit_tts_apiKey", this.state.ttsApiKey || "");
+    } catch (error) {
+      console.warn("saveKeys: localStorage niedostępny (klucze nie zostaną zapamiętane):", error);
+    }
   },
 
   // Diagnostyka widoczna na ekranie (bez potrzeby DevTools) — patrz renderDebugPanel w components.js
@@ -180,6 +211,10 @@ window.app = {
       this.log("TTS testKey: ✅ sukces, klucz działa");
     }
     this.state.ttsKeyError = null;
+
+    // Oba klucze zweryfikowane — zapamiętaj je lokalnie na tym urządzeniu (localStorage),
+    // żeby nie trzeba było wpisywać ich ponownie po odświeżeniu strony.
+    this.saveKeys();
 
     // Nieblokujący zapis personalizacji — błąd (np. brak backendu na GH Pages) nie przerywa flow
     if (this.state.personalization) {
