@@ -28,6 +28,14 @@ window.Components = {
       { id: "mistral", label: "Mistral" }
     ];
 
+    const ttsProviders = [
+      { id: "browser", label: "Głos przeglądarki", hint: "domyślny, bez klucza" },
+      { id: "openai", label: "OpenAI TTS", hint: "naturalny głos, płatne" },
+      { id: "elevenlabs", label: "ElevenLabs", hint: "najwyższa jakość, płatne" },
+      { id: "google", label: "Google Cloud TTS", hint: "wiele języków, płatne" }
+    ];
+    const ttsProvider = state.ttsProvider || "browser";
+
     return `
       <div class="screen">
         <div class="screen-header">ZENIT</div>
@@ -89,6 +97,31 @@ window.Components = {
           " />
           ${state.provider === 'mistral' ? '<p style="font-size: 0.7rem; color: var(--gold); margin-bottom: 1rem;">✓ Klucz Mistral prefilled</p>' : ''}
           ${state.keyError ? `<p style="font-size: 0.8rem; color: var(--ember-bright); margin-bottom: 1rem;">${state.keyError}</p>` : ''}
+        </div>
+
+        <div class="section">
+          <div class="section-label">GŁOS (TTS) — OPCJONALNIE</div>
+          <div class="grid">
+            ${ttsProviders.map(p => `
+              <button class="button ${ttsProvider === p.id ? 'active' : ''}" onclick="window.app.selectTtsProvider('${p.id}')">
+                <div class="button-label">${p.label}</div>
+                <div class="button-hint">${p.hint}</div>
+              </button>
+            `).join('')}
+          </div>
+          ${ttsProvider !== 'browser' ? `
+            <input id="ttsApiKey" type="password" placeholder="Klucz API dla ${ttsProviders.find(p => p.id === ttsProvider).label}" value="${state.ttsApiKey || ''}" style="
+              width: 100%;
+              padding: 0.5rem;
+              background: var(--ember-dim);
+              border: 1px solid var(--ember);
+              color: var(--parchment);
+              border-radius: 8px;
+              font-family: 'IBM Plex Mono', monospace;
+              margin-top: 0.75rem;
+            " />
+            ${state.ttsKeyError ? `<p style="font-size: 0.8rem; color: var(--ember-bright); margin-top: 0.5rem;">${state.ttsKeyError}</p>` : ''}
+          ` : ''}
         </div>
 
         ${state.needsManualLocation ? `
