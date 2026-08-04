@@ -1,5 +1,10 @@
 // ZENIT MVP — main application
 
+// Podbijaj przy każdej zmianie dotyczącej TTS/debugowania — loguje się jako
+// pierwszy wpis w panelu diagnostyki, żeby od razu było widać czy telefon
+// faktycznie załadował najnowszy deployment (bez zgadywania po Vercel dashboardzie).
+const APP_VERSION = "v6 — silent-wav-unlock, surfaced-fallback-errors";
+
 window.app = {
   state: {
     screen: "personalization",  // personalization | mode-selector | session
@@ -27,6 +32,7 @@ window.app = {
     this.loadSavedKeys();
     this.render();
     this.setupEventListeners();
+    this.log(`Wersja apki: ${APP_VERSION}`);
   },
 
   // Klucze API zapamiętane lokalnie na tym urządzeniu (localStorage) — nigdy

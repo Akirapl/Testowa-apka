@@ -51,8 +51,10 @@ window.TTS = {
     this._unlocked = true;
 
     try {
+      // 0.1s realnej (cichej) próbki audio — WebKit nie liczy pliku o zerowej
+      // długości danych jako "odtworzenie", więc odblokowanie by nie zadziałało.
       const silence = new Audio(
-        "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
+        "data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA=="
       );
       silence.play().catch(() => {});
     } catch (error) {
@@ -129,7 +131,12 @@ window.TTS = {
       const audioDataUrl = await this._synthesizeViaProxy(text);
       return await this._playAudio(audioDataUrl, options);
     } catch (error) {
+      // _playAudio nigdy sam nie rzuca (łapie błędy play()/onerror wewnętrznie) — to catch
+      // łapie tylko błędy _synthesizeViaProxy (sieć/klucz) lub konstrukcji Audio(). Bez
+      // wywołania onerror tutaj taki błąd znikał bez śladu — nawet w konsoli deweloperskiej
+      // trudno go było powiązać z fallbackiem, a na telefonie bez DevTools w ogóle niewidoczny.
       console.error(`TTS provider (${this.provider}) error, fallback na głos przeglądarki:`, error);
+      if (options.onerror) options.onerror(`${this.provider} zawiódł (${error.message}) — próbuję głosu przeglądarki`);
       return this._speakBrowser(text, options);
     }
   },
