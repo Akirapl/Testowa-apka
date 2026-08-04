@@ -3,7 +3,7 @@
 // Podbijaj przy każdej zmianie dotyczącej TTS/debugowania — loguje się jako
 // pierwszy wpis w panelu diagnostyki, żeby od razu było widać czy telefon
 // faktycznie załadował najnowszy deployment (bez zgadywania po Vercel dashboardzie).
-const APP_VERSION = "v7 — player controls (powtórz/pauza/stop), TTS czyta narrację+ciekawostkę";
+const APP_VERSION = "v8 — unlock audio retry na każdym dotknięciu (potwierdzony sukces zamiast zgadywania)";
 
 window.app = {
   state: {
@@ -89,6 +89,12 @@ window.app = {
   },
 
   setupEventListeners() {
+    // Odblokowanie audio na iOS/WebKit — próbujemy przy KAŻDYM dotknięciu ekranu,
+    // nie tylko raz. TTS.unlock() jest no-opem po potwierdzonym sukcesie (patrz
+    // komentarz w tts.js), więc to tylko zwiększa liczbę szans, nic nie kosztuje.
+    document.addEventListener("touchend", () => window.TTS.unlock(), { passive: true });
+    document.addEventListener("click", () => window.TTS.unlock());
+
     // Media Session API — obsługa przycisków słuchawek
     if (navigator.mediaSession) {
       navigator.mediaSession.setActionHandler("nexttrack", () => {

@@ -41,14 +41,17 @@ window.TTS = {
   // Odblokuj odtwarzanie audio na iOS Safari/WebKit — tam <audio>.play() działa
   // tylko gdy jest wywołane synchronicznie wewnątrz gestu użytkownika (tap/click).
   // Nasza narracja startuje dopiero po kilkusekundowym oczekiwaniu na LLM, więc bez
-  // tego odblokowania iOS po cichu odrzuca play() i sesja jest niema. Wystarczy raz
-  // odtworzyć cokolwiek (nawet ciszę) w reakcji na pierwszy tap — na resztę sesji
-  // WebKit traktuje odtwarzanie jako już odblokowane.
+  // tego odblokowania iOS po cichu odrzuca play() i sesja jest niema.
+  //
+  // WAŻNE: play() na cichym klipie może SAM zostać odrzucony (np. jeśli dekodowanie
+  // danych: URI nie zdąży się zacząć w tym samym "ticku" co gest) — wcześniejsza wersja
+  // zakładała sukces z góry i nigdy nie próbowała ponownie. Teraz _unlocked ustawiamy
+  // dopiero po potwierdzonym sukcesie, a wywołujący (setupEventListeners) dzwoni tu przy
+  // KAŻDYM dotknięciu ekranu, więc kolejne gesty dają kolejne szanse na odblokowanie.
   _unlocked: false,
 
   unlock() {
     if (this._unlocked) return;
-    this._unlocked = true;
 
     try {
       // 0.1s realnej (cichej) próbki audio — WebKit nie liczy pliku o zerowej
@@ -56,7 +59,11 @@ window.TTS = {
       const silence = new Audio(
         "data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA=="
       );
-      silence.play().catch(() => {});
+      silence.play().then(() => {
+        this._unlocked = true;
+      }).catch(() => {
+        // Odrzucone — spróbujemy znowu przy następnym dotknięciu ekranu.
+      });
     } catch (error) {
       console.warn("TTS unlock: audio unlock failed (non-fatal):", error);
     }
