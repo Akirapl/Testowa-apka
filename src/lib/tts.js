@@ -38,6 +38,36 @@ window.TTS = {
     }
   },
 
+  // Odblokuj odtwarzanie audio na iOS Safari/WebKit — tam <audio>.play() działa
+  // tylko gdy jest wywołane synchronicznie wewnątrz gestu użytkownika (tap/click).
+  // Nasza narracja startuje dopiero po kilkusekundowym oczekiwaniu na LLM, więc bez
+  // tego odblokowania iOS po cichu odrzuca play() i sesja jest niema. Wystarczy raz
+  // odtworzyć cokolwiek (nawet ciszę) w reakcji na pierwszy tap — na resztę sesji
+  // WebKit traktuje odtwarzanie jako już odblokowane.
+  _unlocked: false,
+
+  unlock() {
+    if (this._unlocked) return;
+    this._unlocked = true;
+
+    try {
+      const silence = new Audio(
+        "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
+      );
+      silence.play().catch(() => {});
+    } catch (error) {
+      console.warn("TTS unlock: audio unlock failed (non-fatal):", error);
+    }
+
+    if (this.synthesis) {
+      try {
+        this.synthesis.speak(new SpeechSynthesisUtterance(""));
+      } catch (error) {
+        console.warn("TTS unlock: speechSynthesis unlock failed (non-fatal):", error);
+      }
+    }
+  },
+
   // Testuj czy klucz API jest prawidłowy (bez odtwarzania dźwięku)
   async testKey() {
     this.lastError = null;

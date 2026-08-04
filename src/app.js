@@ -102,6 +102,11 @@ window.app = {
   },
 
   async confirmPersonalization() {
+    // Musi być pierwsza, synchroniczna instrukcja w tej funkcji — odblokowuje
+    // odtwarzanie audio na iOS, które wymaga wywołania play() w tym samym tick'u
+    // co dotknięcie ekranu (patrz komentarz w TTS.unlock()).
+    window.TTS.unlock();
+
     this.syncPersonalizationInputs();
     this.state.personalization = this.state.personalization.trim();
     const apiKey = this.state.apiKey;
@@ -378,10 +383,11 @@ window.app = {
       await window.TTS.speak(step.narration, {
         onend: () => {
           // Kiedy skończy się mowa, czekaj na użytkownika
-        }
+        },
+        onerror: (err) => this.log(`TTS (${window.TTS.provider}): ❌ odtwarzanie nieudane — ${err}`)
       });
     } catch (error) {
-      console.error("TTS Error:", error);
+      this.log(`TTS Error: ${error.message || error}`);
     }
   },
 
@@ -412,7 +418,9 @@ window.app = {
         try {
           await this.generateMuseumNarration(nextIndex);
           this.render();
-          await window.TTS.speak(this.state.steps[nextIndex].narration);
+          await window.TTS.speak(this.state.steps[nextIndex].narration, {
+            onerror: (err) => this.log(`TTS (${window.TTS.provider}): ❌ odtwarzanie nieudane — ${err}`)
+          });
         } catch (error) {
           this.log(`Muzeum krok ${nextIndex}: ❌ błąd — ${error.message || error}`);
           this.state.museumError = "Nie udało się wygenerować opisu — sprawdź klucz API i spróbuj ponownie.";
@@ -423,9 +431,11 @@ window.app = {
         this.render();
 
         try {
-          await window.TTS.speak(this.state.steps[nextIndex].narration);
+          await window.TTS.speak(this.state.steps[nextIndex].narration, {
+            onerror: (err) => this.log(`TTS (${window.TTS.provider}): ❌ odtwarzanie nieudane — ${err}`)
+          });
         } catch (error) {
-          console.error("TTS Error:", error);
+          this.log(`TTS Error: ${error.message || error}`);
         }
       }
     } finally {
@@ -530,7 +540,9 @@ window.app = {
     try {
       await this.generateMuseumNarration(this.state.currentStepIndex);
       this.render();
-      await window.TTS.speak(this.state.steps[this.state.currentStepIndex].narration);
+      await window.TTS.speak(this.state.steps[this.state.currentStepIndex].narration, {
+        onerror: (err) => this.log(`TTS (${window.TTS.provider}): ❌ odtwarzanie nieudane — ${err}`)
+      });
     } catch (error) {
       this.log(`Muzeum retry krok ${this.state.currentStepIndex}: ❌ nadal błąd — ${error.message || error}`);
       this.state.museumError = "Nadal nie udało się wygenerować opisu — spróbuj ponownie.";
