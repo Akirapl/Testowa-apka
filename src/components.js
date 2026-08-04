@@ -85,7 +85,7 @@ window.Components = {
 
         <div class="section">
           <label class="section-label">API KEY</label>
-          <input id="apiKey" type="password" placeholder="Wpisz klucz API" value="${state.apiKey || (state.provider === 'mistral' ? 'c3FeKt1r7PLgPoU001r7pzmV2fWOjmSr' : '')}" style="
+          <input id="apiKey" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Wpisz klucz API" value="${state.apiKey || (state.provider === 'mistral' ? 'c3FeKt1r7PLgPoU001r7pzmV2fWOjmSr' : '')}" style="
             width: 100%;
             padding: 0.5rem;
             background: var(--ember-dim);
@@ -110,7 +110,7 @@ window.Components = {
             `).join('')}
           </div>
           ${ttsProvider !== 'browser' ? `
-            <input id="ttsApiKey" type="password" placeholder="Klucz API dla ${ttsProviders.find(p => p.id === ttsProvider).label}" value="${state.ttsApiKey || ''}" style="
+            <input id="ttsApiKey" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Klucz API dla ${ttsProviders.find(p => p.id === ttsProvider).label}" value="${state.ttsApiKey || ''}" style="
               width: 100%;
               padding: 0.5rem;
               background: var(--ember-dim);
