@@ -170,6 +170,7 @@ window.app = {
   },
 
   async copyShareLink() {
+    this.syncPersonalizationInputs(); // złap to co właśnie wpisane, zanim zbudujemy link
     const url = this.generateShareLink();
     try {
       await navigator.clipboard.writeText(url);
