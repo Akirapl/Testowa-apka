@@ -3,7 +3,21 @@
 // Podbijaj przy każdej zmianie dotyczącej TTS/debugowania — loguje się jako
 // pierwszy wpis w panelu diagnostyki, żeby od razu było widać czy telefon
 // faktycznie załadował najnowszy deployment (bez zgadywania po Vercel dashboardzie).
-const APP_VERSION = "v10 — auto-retry (3x) na 'Load failed' w TTS i LLM proxy (słaby zasięg pod niebem)";
+const APP_VERSION = "v11 — klucze API i profil przez parametry URL, auto-start sesji";
+
+// Bardzo lekkie "zaciemnienie" klucza w linku URL — NIE jest to prawdziwe szyfrowanie,
+// tylko prosty przesunięty szyfr Cezara na kodach znaków, żeby klucz API nie leżał
+// w linku/screenshocie jako czytelny, oczywisty ciąg znaków. Realne bezpieczeństwo
+// nadal opiera się na tym, że link jest prywatny.
+const KEY_CIPHER_SHIFT = 5;
+
+function obfuscateKey(str) {
+  return Array.from(str).map(ch => String.fromCodePoint(ch.codePointAt(0) + KEY_CIPHER_SHIFT)).join("");
+}
+
+function deobfuscateKey(str) {
+  return Array.from(str).map(ch => String.fromCodePoint(ch.codePointAt(0) - KEY_CIPHER_SHIFT)).join("");
+}
 
 window.app = {
   state: {
@@ -27,14 +41,143 @@ window.app = {
     ttsApiKey: "",
     ttsKeyError: null,
     audioPaused: false,
-    audioBlocked: false
+    audioBlocked: false,
+    _locationFromUrl: false,
+    autoStart: false
   },
 
   init() {
     this.loadSavedKeys();
+    this.applyUrlParams();   // URL nadpisuje to, co wczytane z localStorage
     this.render();
     this.setupEventListeners();
     this.log(`Wersja apki: ${APP_VERSION}`);
+    if (this.state.autoStart) {
+      this.log("Auto-start: autostart=1 w URL — pomijam ekrany 1-2");
+      this.autoStartSession();
+    }
+  },
+
+  // Klucze API, profil, personalizacja i lokalizacja przez parametry URL — pozwala
+  // udostępnić gotowy link testowy (patrz generateShareLink/copyShareLink niżej)
+  // zamiast każdorazowego ręcznego wpisywania kluczy. URL ma pierwszeństwo nad
+  // localStorage. `autostart=1` to jedyny wyznacznik automatycznego startu sesji —
+  // nie zgadujemy tego po komplecie innych parametrów.
+  applyUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const llmProvider = params.get("llmProvider");
+    const llmKey = params.get("llmKey");
+    const ttsProvider = params.get("ttsProvider");
+    const ttsKey = params.get("ttsKey");
+    const lvl = params.get("lvl");
+    const personalizacja = params.get("personalizacja");
+    const lat = parseFloat(params.get("lat"));
+    const lon = parseFloat(params.get("lon"));
+
+    if (llmProvider) this.state.provider = llmProvider;
+    if (llmKey) this.state.apiKey = deobfuscateKey(llmKey);
+    if (ttsProvider) this.state.ttsProvider = ttsProvider;
+    if (ttsKey) this.state.ttsApiKey = deobfuscateKey(ttsKey);
+    if (personalizacja) this.state.personalization = personalizacja;
+
+    const LVL_TO_PROFILE = { "1": "layperson", "2": "enthusiast", "3": "expert", "4": "professional" };
+    if (lvl && LVL_TO_PROFILE[lvl]) this.state.profile = LVL_TO_PROFILE[lvl];
+
+    this.state._locationFromUrl = !isNaN(lat) && !isNaN(lon);
+    if (this.state._locationFromUrl) {
+      this.state.location = { lat, lon };
+      this.state.needsManualLocation = false;
+    }
+
+    this.state.autoStart = params.get("autostart") === "1";
+  },
+
+  // Wersja confirmPersonalization() bez ekranu — dla linków z autostart=1. Jeśli
+  // walidacja klucza zawiedzie na dowolnym etapie, NIE blokujemy apki: zostaje
+  // normalny ekran "Poznajmy się" z widocznym błędem, do ręcznej poprawki.
+  async autoStartSession() {
+    try {
+      window.LLM.init(this.state.provider, this.state.apiKey);
+    } catch (error) {
+      this.log(`Auto-start: LLM.init FAILED — ${error.message}`);
+      return;
+    }
+
+    const isLlmValid = await window.LLM.testKey();
+    if (!isLlmValid) {
+      this.state.keyError = "Auto-start: klucz LLM z URL nie działa — sprawdź/popraw ręcznie.";
+      this.log(`Auto-start: LLM testKey NIEUDANY — ${window.LLM.lastError || "?"}`);
+      this.render();
+      return;
+    }
+
+    try {
+      window.TTS.init(this.state.ttsProvider, this.state.ttsApiKey);
+    } catch (error) {
+      this.log(`Auto-start: TTS.init FAILED — ${error.message}`);
+      return;
+    }
+
+    if (this.state.ttsProvider !== "browser") {
+      const isTtsValid = await window.TTS.testKey();
+      if (!isTtsValid) {
+        this.state.ttsKeyError = "Auto-start: klucz TTS z URL nie działa — sprawdź/popraw ręcznie.";
+        this.log(`Auto-start: TTS testKey NIEUDANY — ${window.TTS.lastError || "?"}`);
+        this.render();
+        return;
+      }
+    }
+
+    this.saveKeys();
+
+    // Lokalizacja z URL ma pierwszeństwo — próbujemy geolokalizacji przeglądarki
+    // tylko jeśli URL jej nie podał (dokładnie jak w ręcznym confirmPersonalization()).
+    if (!this.state._locationFromUrl) {
+      await this.tryUpdateLocation();
+    }
+
+    if (this.state.needsManualLocation) {
+      this.log("Auto-start: brak lokalizacji z URL i geolokalizacja niedostępna — zostaję na ekranie ręcznego miasta");
+      this.render();
+      return;
+    }
+
+    this.log("Auto-start: klucze i lokalizacja zweryfikowane, startuję sesję NIEBO");
+    this.chooseAstronomy();
+  },
+
+  // Buduje gotowy do wysłania link testowy z bieżącymi (zweryfikowanymi) kluczami —
+  // odbiorca po otwarciu linku od razu wystartuje sesję NIEBO.
+  generateShareLink() {
+    const params = new URLSearchParams();
+    if (this.state.provider) params.set("llmProvider", this.state.provider);
+    if (this.state.apiKey) params.set("llmKey", obfuscateKey(this.state.apiKey));
+    if (this.state.ttsProvider) params.set("ttsProvider", this.state.ttsProvider);
+    if (this.state.ttsApiKey) params.set("ttsKey", obfuscateKey(this.state.ttsApiKey));
+
+    const PROFILE_TO_LVL = { layperson: "1", enthusiast: "2", expert: "3", professional: "4" };
+    if (this.state.profile && PROFILE_TO_LVL[this.state.profile]) {
+      params.set("lvl", PROFILE_TO_LVL[this.state.profile]);
+    }
+    if (this.state.personalization) params.set("personalizacja", this.state.personalization);
+    if (this.state._locationFromUrl && this.state.location) {
+      params.set("lat", this.state.location.lat);
+      params.set("lon", this.state.location.lon);
+    }
+    params.set("autostart", "1"); // sens linku do udostępnienia — od razu startuje u odbiorcy
+
+    return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+  },
+
+  async copyShareLink() {
+    const url = this.generateShareLink();
+    try {
+      await navigator.clipboard.writeText(url);
+      this.log("Link testowy skopiowany do schowka");
+    } catch (error) {
+      this.log(`Nie udało się skopiować linku automatycznie — oto on: ${url}`);
+    }
+    this.render();
   },
 
   // Klucze API zapamiętane lokalnie na tym urządzeniu (localStorage) — nigdy

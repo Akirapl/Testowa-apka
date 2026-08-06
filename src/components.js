@@ -9,6 +9,10 @@ window.Components = {
       <details style="margin-top: 1rem; font-size: 0.65rem; color: var(--parchment-dim);">
         <summary style="cursor: pointer;">Diagnostyka (dotknij żeby rozwinąć)</summary>
         <pre style="white-space: pre-wrap; word-break: break-word; margin-top: 0.5rem; font-family: monospace; font-size: 0.65rem; color: var(--parchment-dim);">${log}</pre>
+        ${state.provider && state.apiKey ? `
+          <button class="button" style="margin-top: 0.5rem; font-size: 0.7rem; padding: 0.4rem 0.6rem;"
+            onclick="window.app.copyShareLink()">🔗 Kopiuj link testowy</button>
+        ` : ''}
       </details>
     `;
   },
