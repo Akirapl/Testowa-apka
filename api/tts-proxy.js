@@ -103,7 +103,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             input: ssml ? { ssml } : { text },
             voice: { languageCode: languageCode || "pl-PL", name: voice || "pl-PL-Wavenet-A" },
-            audioConfig: { audioEncoding: "MP3", speakingRate: 0.9 }
+            audioConfig: { audioEncoding: "MP3" }
           })
         });
 

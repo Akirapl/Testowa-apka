@@ -3,7 +3,7 @@
 // Podbijaj przy każdej zmianie dotyczącej TTS/debugowania — loguje się jako
 // pierwszy wpis w panelu diagnostyki, żeby od razu było widać czy telefon
 // faktycznie załadował najnowszy deployment (bez zgadywania po Vercel dashboardzie).
-const APP_VERSION = "v12 — Wielki Wóz i inne cele: narracja w kilku punktach z pauzami zamiast jednego bloku";
+const APP_VERSION = "v13 — cap max 5 punktów (scalanie nadmiaru), cofnięty speakingRate";
 
 // Bardzo lekkie "zaciemnienie" klucza w linku URL — NIE jest to prawdziwe szyfrowanie,
 // tylko prosty przesunięty szyfr Cezara na kodach znaków, żeby klucz API nie leżał

@@ -251,6 +251,24 @@ window.LLM = {
         points = [{ star: null, narration: parsed.narration.trim() }];
       }
 
+      // Siatka bezpieczeństwa niezależna od promptu: nawet gdy LLM zignoruje limit
+      // (np. "jeden punkt na gwiazdę" dla 7-gwiazdowego celu dało kiedyś 8 punktów —
+      // 7 pauz SSML w jednej wypowiedzi brzmi poszatkowanie/sztucznie), scal nadmiar
+      // punktów w grupy, żeby finalnie było ich najwyżej MAX_POINTS.
+      const MAX_POINTS = 5;
+      if (points.length > MAX_POINTS) {
+        const merged = [];
+        const groupSize = Math.ceil(points.length / MAX_POINTS);
+        for (let i = 0; i < points.length; i += groupSize) {
+          const group = points.slice(i, i + groupSize);
+          merged.push({
+            star: group[0].star,
+            narration: group.map(p => p.narration).join(" ")
+          });
+        }
+        points = merged;
+      }
+
       return {
         points,
         fact: parsed.fact || "",
