@@ -3,7 +3,7 @@
 // Podbijaj przy każdej zmianie dotyczącej TTS/debugowania — loguje się jako
 // pierwszy wpis w panelu diagnostyki, żeby od razu było widać czy telefon
 // faktycznie załadował najnowszy deployment (bez zgadywania po Vercel dashboardzie).
-const APP_VERSION = "v11 — klucze API i profil przez parametry URL, auto-start sesji";
+const APP_VERSION = "v12 — Wielki Wóz i inne cele: narracja w kilku punktach z pauzami zamiast jednego bloku";
 
 // Bardzo lekkie "zaciemnienie" klucza w linku URL — NIE jest to prawdziwe szyfrowanie,
 // tylko prosty przesunięty szyfr Cezara na kodach znaków, żeby klucz API nie leżał
@@ -528,40 +528,47 @@ window.app = {
     }));
   },
 
-  computeAstronomyPosition(target, date, location) {
+  // Liczy pozycję dla KAŻDEJ gwiazdy celu (np. 7 dla Wielkiego Wozu), nie tylko
+  // pierwszej — pozwala LLM opisać każdą gwiazdę osobno, z realną pozycją i
+  // faktem z katalogu, zamiast jednego bloku prozy o "kilku gwiazdach naraz".
+  computeAllStarPositions(target, date, location) {
     const reference = window.CATALOG.references.find(r => r.name === target);
     if (!reference || !reference.stars.length) {
       throw new Error(`Brak wpisu w CATALOG.references dla celu: ${target}`);
     }
 
-    const starName = reference.stars[0];
-    const star = window.CATALOG.stars.find(s => s.name === starName);
-    if (!star) {
-      throw new Error(`Gwiazda nie znaleziona w katalogu: ${starName}`);
-    }
-
-    const altAz = window.ZenitAstronomy.getAltAz(star.ra, star.dec, location.lat, location.lon, date);
-    return { azimuth: altAz.azimuth, altitude: altAz.altitude };
+    return reference.stars.map(starName => {
+      const star = window.CATALOG.stars.find(s => s.name === starName);
+      if (!star) {
+        throw new Error(`Gwiazda nie znaleziona w katalogu: ${starName}`);
+      }
+      const altAz = window.ZenitAstronomy.getAltAz(star.ra, star.dec, location.lat, location.lon, date);
+      return { name: star.name, azimuth: altAz.azimuth, altitude: altAz.altitude, fact: star.fact || null };
+    });
   },
 
   async generateAstronomyNarration(stepIndex) {
     const rawStep = this.state.steps[stepIndex];
     try {
-      const pos = this.computeAstronomyPosition(rawStep.target, new Date(), this.state.location);
-      this.log(`Astro krok ${stepIndex} (${rawStep.target}): pozycja OK — az=${pos.azimuth.toFixed(1)} alt=${pos.altitude.toFixed(1)}`);
+      const stars = this.computeAllStarPositions(rawStep.target, new Date(), this.state.location);
+      this.log(`Astro krok ${stepIndex} (${rawStep.target}): pozycje OK — ${stars.length} gwiazd(a)`);
 
       const context = {
         profile: this.state.profile,
         currentStep: stepIndex + 1,
         totalSteps: this.state.steps.length,
-        object: { name: rawStep.target, azimuth: pos.azimuth, altitude: pos.altitude },
+        object: { name: rawStep.target, stars },
         previousObjects: this.state.steps.slice(0, stepIndex).map(s => ({ name: s.target })),
         personalization: this.state.personalization
       };
 
       const llmResponse = await window.LLM.generateStep(context);
-      this.state.steps[stepIndex] = { ...rawStep, narration: llmResponse.narration, fact: llmResponse.fact };
-      this.log(`Astro krok ${stepIndex}: LLM ✅ sukces (${llmResponse.narration.length} znaków)`);
+      if (!llmResponse.points.length) {
+        throw new Error("LLM zwrócił pustą tablicę points");
+      }
+      this.state.steps[stepIndex] = { ...rawStep, points: llmResponse.points, fact: llmResponse.fact };
+      const totalChars = llmResponse.points.reduce((sum, p) => sum + p.narration.length, 0);
+      this.log(`Astro krok ${stepIndex}: LLM ✅ sukces (${llmResponse.points.length} punktów, ${totalChars} znaków)`);
     } catch (error) {
       this.log(`Astro krok ${stepIndex}: ❌ FALLBACK — ${error.message || error}`);
       // rawStep (FALLBACK_STEPS) zostaje bez zmian — to jest sieć bezpieczeństwa
@@ -570,7 +577,14 @@ window.app = {
 
   // To apka głosowa — TTS ma czytać wszystko co jest na ekranie, nie tylko
   // narrację, ale i ciekawostkę (step.fact), bo obie części niosą treść.
+  // Astronomia (step.points, wiele punktów po jednej gwieździe) łączy się znakiem
+  // "\n\n" — to granica, na której api/tts-proxy.js wstawia realną pauzę SSML dla
+  // Google TTS. Muzeum (płaski step.narration) zachowuje dotychczasowe zachowanie.
   buildSpokenText(step) {
+    if (step.points && step.points.length) {
+      const beats = step.points.map(p => p.narration).filter(Boolean);
+      return [...beats, step.fact].filter(Boolean).join("\n\n");
+    }
     return [step.narration, step.fact].filter(Boolean).join(" ");
   },
 

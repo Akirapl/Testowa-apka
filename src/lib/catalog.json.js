@@ -21,6 +21,38 @@ window.CATALOG = {
       fact: "Wraz z Dubbhe tworzą „wskazówkę” na Polaris"
     },
     {
+      name: "Phecda",
+      const: "UMa",
+      ra: 178.458,
+      dec: 53.694,
+      mag: 2.44,
+      fact: "Wewnętrzny róg miski, tuż przy rączce"
+    },
+    {
+      name: "Megrez",
+      const: "UMa",
+      ra: 183.856,
+      dec: 57.032,
+      mag: 3.31,
+      fact: "Najsłabsza z siedmiu gwiazd Wozu — łączy miskę z rączką"
+    },
+    {
+      name: "Alioth",
+      const: "UMa",
+      ra: 193.507,
+      dec: 55.960,
+      mag: 1.77,
+      fact: "Najjaśniejsza gwiazda całego Wielkiego Wozu — pierwsza gwiazda rączki"
+    },
+    {
+      name: "Mizar",
+      const: "UMa",
+      ra: 200.982,
+      dec: 54.925,
+      mag: 2.23,
+      fact: "Słynna podwójna gwiazda — obok niej gołym okiem widać towarzyszkę Alkora"
+    },
+    {
       name: "Alkaid",
       const: "UMa",
       ra: 206.886,
@@ -167,7 +199,7 @@ window.CATALOG = {
     {
       name: "Wielki Wóz",
       description: "Siedem jasnych gwiazd tworzących charakterystyczną chochlę",
-      stars: ["Dubhe", "Merak", "Alkaid"]
+      stars: ["Dubhe", "Merak", "Phecda", "Megrez", "Alioth", "Mizar", "Alkaid"]
     },
     {
       name: "Gwiazda Polarna",

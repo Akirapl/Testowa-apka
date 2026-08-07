@@ -21,7 +21,7 @@ window.Components = {
   // więc te przyciski są jedynym sposobem sterowania odtwarzaniem poza czekaniem.
   renderPlayerControls(state) {
     const step = state.steps[state.currentStepIndex];
-    const disabled = !step || !step.narration;
+    const disabled = !step || !(step.narration || (step.points && step.points.length));
 
     // Przeglądarka zablokowała automatyczne odtwarzanie (typowe na iOS) — audio
     // jest gotowe, czeka tylko na świeży tap. Duży, jednoznaczny przycisk zamiast
@@ -373,7 +373,9 @@ window.Components = {
 
             <div>
               <div class="step-label">CEL ${state.currentStepIndex + 1}/${state.steps.length} · ${step.target.toUpperCase()}</div>
-              <p class="step-text">${step.narration || 'Generowanie narracji...'}</p>
+              ${step.points && step.points.length
+                ? step.points.map(p => `<p class="step-text">${p.narration}</p>`).join('')
+                : `<p class="step-text">Generowanie narracji...</p>`}
               ${step.fact ? `<p class="step-fact">${step.fact}</p>` : ''}
             </div>
           ` : `

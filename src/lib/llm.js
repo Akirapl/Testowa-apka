@@ -95,7 +95,7 @@ window.LLM = {
       throw new Error("API key not configured");
     }
 
-    const systemPrompt = window.SYSTEM_PROMPT;
+    const systemPrompt = window.ASTRONOMY_SYSTEM_PROMPT;
     const userMessage = this.buildPrompt(context);
 
     try {
@@ -113,7 +113,7 @@ window.LLM = {
           break;
       }
 
-      return this.parseResponse(response);
+      return this.parseAstronomyResponse(response);
     } catch (error) {
       console.error("LLM Error:", error);
       throw error;
@@ -135,7 +135,9 @@ window.LLM = {
     return this._callProxy(systemPrompt, userMessage);
   },
 
-  // Buduj prompt dla LLM
+  // Buduj prompt dla LLM — cel może się składać z wielu gwiazd (np. 7 dla
+  // Wielkiego Wozu); wypisujemy każdą z realną pozycją i faktem z katalogu,
+  // żeby LLM miał materiał do osobnego punktu na gwiazdę zamiast zgadywać.
   buildPrompt(context) {
     const { profile, currentStep, totalSteps, object, previousObjects, personalization } = context;
 
@@ -147,13 +149,18 @@ window.LLM = {
     }
 
     prompt += `Bieżący cel: ${object.name}\n`;
-    prompt += `Azymut: ${object.azimuth.toFixed(1)}°, Wysokość: ${object.altitude.toFixed(1)}°\n`;
+    prompt += `Cel składa się z ${object.stars.length} gwiazd(y). Dla każdej podaję pozycję i znany fakt źródłowy:\n`;
+    object.stars.forEach((star, i) => {
+      prompt += `${i + 1}. ${star.name} — Azymut: ${star.azimuth.toFixed(1)}°, Wysokość: ${star.altitude.toFixed(1)}°`;
+      if (star.fact) prompt += ` — Fakt: ${star.fact}`;
+      prompt += `\n`;
+    });
 
     if (previousObjects.length > 0) {
-      prompt += `Poprzednio znalezione: ${previousObjects.map(o => o.name).join(", ")}\n`;
+      prompt += `\nPoprzednio znalezione: ${previousObjects.map(o => o.name).join(", ")}\n`;
     }
 
-    prompt += `\nWygeneruj naturalną, drażliwą narrację w polskim dla tego kroku. JEŚLI ma opis użytkownika - dostosuj narrację do jego zainteresowań, profesji, doświadczenia. Odpowiedź musi być poprawnym JSON z polami: narration (tekst do TTS), fact (ciekawostka), continue (boolean).`;
+    prompt += `\nWygeneruj naturalną, żywą narrację w polskim dla tego kroku, PODZIELONĄ na kilka odrębnych punktów (points) — patrz FORMAT ODPOWIEDZI. JEŚLI ma opis użytkownika - dostosuj narrację do jego zainteresowań, profesji, doświadczenia.`;
 
     return prompt;
   },
@@ -212,6 +219,45 @@ window.LLM = {
       return this.parseResponse(response);
     } catch (error) {
       console.error("LLM Error (museum):", error);
+      throw error;
+    }
+  },
+
+  // Parsuj JSON response z LLM — wariant astronomiczny (points zamiast płaskiego
+  // narration). Osobna funkcja od parseResponse() celowo: parseResponse() jest
+  // współdzielony z trybem muzealnym (generateMuseumStep), który wciąż oczekuje
+  // płaskiego {narration, fact, continue} — zmiana tam zepsułaby muzeum.
+  parseAstronomyResponse(text) {
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No JSON found in response");
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      let points = Array.isArray(parsed.points) ? parsed.points : [];
+      points = points
+        .map(p => ({
+          star: (p && typeof p.star === "string") ? p.star : null,
+          narration: (p && typeof p.narration === "string") ? p.narration.trim() : ""
+        }))
+        .filter(p => p.narration.length > 0);
+
+      // Awaryjne dopasowanie: jeśli LLM zignorował instrukcję i zwrócił stary,
+      // płaski kształt {narration: "..."}, potraktuj to jako jeden punkt zamiast
+      // odrzucać całą odpowiedź i spadać na fallback.
+      if (points.length === 0 && typeof parsed.narration === "string" && parsed.narration.trim()) {
+        points = [{ star: null, narration: parsed.narration.trim() }];
+      }
+
+      return {
+        points,
+        fact: parsed.fact || "",
+        continue: parsed.continue !== false
+      };
+    } catch (error) {
+      console.error("Failed to parse LLM astronomy response:", error, text);
       throw error;
     }
   },
