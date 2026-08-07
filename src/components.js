@@ -1,6 +1,114 @@
 // UI Components
 
 window.Components = {
+  // Kompas nieba — mapuje azymut/wysokość (az/alt) na pozycję X/Y w układzie biegunowym.
+  // az  = 0…360°, zgodnie z ruchem wskazówek zegara od północy
+  // alt = 0…90°, 0° = horyzont, 90° = zenit (środek tarczy)
+  // Projekcja: r = (90 - alt) / 90 * R, x = cx + r·sin(az), y = cy - r·cos(az)
+  renderSkyCompass(state) {
+    const W = 220, H = 220;
+    const cx = W / 2, cy = H / 2;
+    const R = 88; // px — promień horyzontu (alt = 0°)
+
+    const altToR = (alt) => (90 - Math.min(Math.max(alt, -15), 90)) / 90 * R;
+    const toXY = (az, alt) => {
+      const r = altToR(alt);
+      const rad = az * Math.PI / 180;
+      return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) };
+    };
+
+    let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"
+               xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;overflow:visible;">
+      <defs>
+        <radialGradient id="sg" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#0A0C1A"/>
+          <stop offset="75%"  stop-color="#060708"/>
+          <stop offset="100%" stop-color="#0D0A14"/>
+        </radialGradient>
+      </defs>
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#sg)"
+              stroke="rgba(161,61,61,0.45)" stroke-width="1.5"/>`;
+
+    // Pierścienie wysokości 30° i 60°
+    [30, 60].forEach(alt => {
+      const r = altToR(alt);
+      s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+                    stroke="rgba(240,234,224,0.07)" stroke-width="1" stroke-dasharray="3 6"/>
+            <text x="${cx + 3}" y="${cy - r + 10}" fill="rgba(240,234,224,0.22)"
+                  font-size="8" font-family="monospace">${alt}°</text>`;
+    });
+
+    // Linie kardynalne
+    [0, 90, 180, 270].forEach(az => {
+      const rad = az * Math.PI / 180;
+      s += `<line x1="${cx}" y1="${cy}"
+                  x2="${(cx + R * Math.sin(rad)).toFixed(1)}"
+                  y2="${(cy - R * Math.cos(rad)).toFixed(1)}"
+                  stroke="rgba(240,234,224,0.06)" stroke-width="1"/>`;
+    });
+
+    // Etykiety kardynalne
+    [
+      { l: 'N', x: cx,      y: cy - R - 10 },
+      { l: 'E', x: cx + R + 11, y: cy + 4  },
+      { l: 'S', x: cx,      y: cy + R + 14 },
+      { l: 'W', x: cx - R - 11, y: cy + 4  }
+    ].forEach(d => {
+      s += `<text x="${d.x}" y="${d.y}" fill="rgba(201,162,75,0.6)"
+                  font-size="10" font-family="monospace" font-weight="600"
+                  text-anchor="middle">${d.l}</text>`;
+    });
+
+    // Krzyżyk zenitu
+    s += `<line x1="${cx-5}" y1="${cy}" x2="${cx+5}" y2="${cy}"
+                stroke="rgba(240,234,224,0.18)" stroke-width="1"/>
+          <line x1="${cx}" y1="${cy-5}" x2="${cx}" y2="${cy+5}"
+                stroke="rgba(240,234,224,0.18)" stroke-width="1"/>`;
+
+    // Punkty wszystkich stepów
+    state.steps.forEach((step, idx) => {
+      if (step.azimuth == null || step.altitude == null) return;
+      const isCur   = idx === state.currentStepIndex;
+      const isPast  = idx < state.currentStepIndex;
+      const below   = step.altitude < 0;
+      const p       = toXY(step.azimuth, step.altitude);
+      const px      = p.x.toFixed(1), py = p.y.toFixed(1);
+
+      if (isCur) {
+        // Pulsująca poświata aktualnego celu
+        const col = below ? 'rgba(193,75,75,' : 'rgba(201,162,75,';
+        s += `<circle cx="${px}" cy="${py}" r="18" fill="${col}0.10)" stroke="none">
+                <animate attributeName="r"       values="14;22;14" dur="2.8s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.9;0.2;0.9" dur="2.8s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="${px}" cy="${py}" r="5.5"
+                      fill="${below ? 'rgba(193,75,75,0.9)' : 'rgba(201,162,75,1)'}"
+                      stroke="white" stroke-width="1.5"/>`;
+        // Etykieta
+        const lbl = step.target.length > 16 ? step.target.slice(0, 14) + '…' : step.target;
+        const lx  = (parseFloat(px) + 11).toFixed(1);
+        const ly  = (parseFloat(py) - 5).toFixed(1);
+        s += `<text x="${lx}" y="${ly}" fill="${below ? 'rgba(193,75,75,0.9)' : 'rgba(201,162,75,1)'}"
+                    font-size="9" font-family="monospace" font-weight="600">${lbl}</text>`;
+        s += `<text x="${lx}" y="${(parseFloat(ly) + 11).toFixed(1)}"
+                    fill="rgba(240,234,224,0.4)" font-size="7.5" font-family="monospace">
+                ${below ? '↓ pod horyzontem' : `az ${Math.round(step.azimuth)}° · wys ${Math.round(step.altitude)}°`}
+              </text>`;
+      } else if (isPast) {
+        const lbl = step.target.length > 10 ? step.target.slice(0, 9) + '…' : step.target;
+        s += `<circle cx="${px}" cy="${py}" r="3.5" fill="rgba(240,234,224,0.35)" stroke="none"/>
+              <text x="${(parseFloat(px)+6).toFixed(1)}" y="${(parseFloat(py)+4).toFixed(1)}"
+                    fill="rgba(240,234,224,0.22)" font-size="7.5" font-family="monospace">${lbl}</text>`;
+      } else {
+        s += `<circle cx="${px}" cy="${py}" r="3" fill="rgba(240,234,224,0.08)"
+                      stroke="rgba(240,234,224,0.18)" stroke-width="1"/>`;
+      }
+    });
+
+    s += `</svg>`;
+    return s;
+  },
+
   // Panel diagnostyczny — pełny przebieg w plain tekście, widoczny na ekranie
   // (bez potrzeby DevTools, np. na telefonie). Doklejany na dole każdego ekranu.
   renderDebugPanel(state) {
@@ -319,6 +427,21 @@ window.Components = {
     }
 
     // ASTRONOMY MODE
+    // Wskaźnik kierunku tekstowy dla aktualnego stepu
+    const posHint = (() => {
+      if (!step || step.azimuth == null) return '';
+      const dir = window.ZenitAstronomy ? window.ZenitAstronomy.describeDirection(step.azimuth) : '';
+      const altDesc = step.altitude < 0    ? '(pod horyzontem)'        :
+                      step.altitude < 15   ? '(nisko nad horyzontem)'  :
+                      step.altitude < 45   ? '(w połowie nieba)'       :
+                                             '(wysoko nad horyzontem)';
+      return `<p style="font-size:0.7rem;letter-spacing:0.06em;color:var(--parchment-dim);
+                        text-align:center;margin-top:0.4rem;font-family:'IBM Plex Mono',monospace;">
+                AZ ${Math.round(step.azimuth)}° ${dir.toUpperCase()} &nbsp;·&nbsp;
+                WYS ${Math.round(step.altitude)}° ${altDesc}
+              </p>`;
+    })();
+
     return `
       <div class="screen session">
         <div class="session-header">
@@ -328,9 +451,9 @@ window.Components = {
 
         <div class="session-content">
           ${!isLastStep ? `
-            <div class="star-indicator">
-              <div class="star-glow"></div>
-              <div class="star-dot"></div>
+            <div style="flex-shrink:0;">
+              ${this.renderSkyCompass(state)}
+              ${posHint}
             </div>
 
             <div>
@@ -339,6 +462,9 @@ window.Components = {
               ${step.fact ? `<p class="step-fact">${step.fact}</p>` : ''}
             </div>
           ` : `
+            <div style="flex-shrink:0;">
+              ${this.renderSkyCompass(state)}
+            </div>
             <p class="step-text" style="font-size: 1.1rem;">
               To już koniec dzisiejszej trasy. Odpoczywaj pod niebem — reszta należy do Ciebie.
             </p>

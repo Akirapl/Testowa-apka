@@ -352,6 +352,10 @@ window.app = {
       const pos = this.computeAstronomyPosition(rawStep.target, new Date(), this.state.location);
       this.log(`Astro krok ${stepIndex} (${rawStep.target}): pozycja OK — az=${pos.azimuth.toFixed(1)} alt=${pos.altitude.toFixed(1)}`);
 
+      // Powiąż pozycję X/Y (azymut/wysokość) ze stepem natychmiast —
+      // kompas nieba będzie widoczny jeszcze przed odpowiedzią LLM.
+      this.state.steps[stepIndex] = { ...rawStep, azimuth: pos.azimuth, altitude: pos.altitude };
+
       const context = {
         profile: this.state.profile,
         currentStep: stepIndex + 1,
@@ -362,7 +366,8 @@ window.app = {
       };
 
       const llmResponse = await window.LLM.generateStep(context);
-      this.state.steps[stepIndex] = { ...rawStep, narration: llmResponse.narration, fact: llmResponse.fact };
+      // Zachowaj powiązaną pozycję X/Y przy dopisywaniu narracji z LLM
+      this.state.steps[stepIndex] = { ...this.state.steps[stepIndex], narration: llmResponse.narration, fact: llmResponse.fact };
       this.log(`Astro krok ${stepIndex}: LLM ✅ sukces (${llmResponse.narration.length} znaków)`);
     } catch (error) {
       this.log(`Astro krok ${stepIndex}: ❌ FALLBACK — ${error.message || error}`);
